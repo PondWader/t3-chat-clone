@@ -1,0 +1,9 @@
+{
+    "name": "@t3-chat-clone/server",
+    "module": "index.ts",
+    "type": "module",
+    "private": true,
+    "dependencies": {
+        "@t3-chat-clone/db": "workspace:*"
+    }
+}

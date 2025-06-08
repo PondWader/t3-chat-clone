@@ -1,0 +1,46 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "t3chat-clone",
+      "dependencies": {
+        "zod": "^3.25.56",
+      },
+      "devDependencies": {
+        "@types/bun": "^1.2.15",
+      },
+    },
+    "packages/db": {
+      "name": "@t3-chat-clone/db",
+    },
+    "packages/models": {
+      "name": "@t3-chat-clone/models",
+      "dependencies": {
+        "@t3-chat-clone/db": "workspace:*",
+      },
+    },
+    "packages/server": {
+      "name": "@t3-chat-clone/server",
+      "dependencies": {
+        "@t3-chat-clone/db": "workspace:*",
+      },
+    },
+  },
+  "packages": {
+    "@t3-chat-clone/db": ["@t3-chat-clone/db@workspace:packages/db"],
+
+    "@t3-chat-clone/models": ["@t3-chat-clone/models@workspace:packages/models"],
+
+    "@t3-chat-clone/server": ["@t3-chat-clone/server@workspace:packages/server"],
+
+    "@types/bun": ["@types/bun@1.2.15", "", { "dependencies": { "bun-types": "1.2.15" } }, "sha512-U1ljPdBEphF0nw1MIk0hI7kPg7dFdPyM7EenHsp6W5loNHl7zqy6JQf/RKCgnUn2KDzUpkBwHPnEJEjII594bA=="],
+
+    "@types/node": ["@types/node@22.15.30", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-6Q7lr06bEHdlfplU6YRbgG1SFBdlsfNC4/lX+SkhiTs0cpJkOElmWls8PxDFv4yY/xKb8Y6SO0OmSX4wgqTZbA=="],
+
+    "bun-types": ["bun-types@1.2.15", "", { "dependencies": { "@types/node": "*" } }, "sha512-NarRIaS+iOaQU1JPfyKhZm4AsUOrwUOqRNHY0XxI8GI8jYxiLXLcdjYMG9UKS+fwWasc1uw1htV9AX24dD+p4w=="],
+
+    "undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
+
+    "zod": ["zod@3.25.56", "", {}, "sha512-rd6eEF3BTNvQnR2e2wwolfTmUTnp70aUTqr0oaGbHifzC3BKJsoV+Gat8vxUMR1hwOKBs6El+qWehrHbCpW6SQ=="],
+  }
+}
