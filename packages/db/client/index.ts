@@ -1,10 +1,10 @@
-import { Model } from "../index.js"
+import { Store } from "../index.js"
 
 export type CreateClientOptions = {
     wsUrl: string
-    models: Model[]
+    stores: Store<any>[]
 }
 
 export function createClient(opts: CreateClientOptions) {
-
+    console.log(opts);
 }

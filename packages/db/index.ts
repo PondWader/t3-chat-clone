@@ -1,24 +1,36 @@
-import type { ZodType } from "zod/v4"
+import type { ZodObject } from "zod/v4"
+import z from "zod/v4";
 
-export type Model = {}
+export type Action = "create" | "update" | "delete";
 
-export type CreateModelOptions = {
+export type Store<T> = {
+    schema: ZodObject
+    validate(obj: T): void
+}
+
+export type CreateStoreOptions<T extends ZodObject> = {
     name: string
-    schema: {
-        [x: string]: ZodType
-    }
-    singular: boolean
-    editable: boolean
+    type: 'event' | 'singular'
+    schema: T
+    validateUpdate?(action: Action, object: z.infer<T>): void
 }
 
 const databaseNameRe = /^[a-zA-Z]+$/;
 
-export function createModel(opts: CreateModelOptions): Model {
+export function createStore<T extends ZodObject>(opts: CreateStoreOptions<T>): Store<z.infer<T>> {
     for (const fieldName of Object.keys(opts.schema)) {
         if (!databaseNameRe.test(fieldName)) {
             throw new Error(`Model schema field name "${fieldName}" is not valid.`);
         }
     }
 
-    return {}
+    return {
+        schema: opts.schema,
+        validate(obj) {
+            this.schema.parse(obj);
+            if (opts.validateUpdate) {
+                opts.validateUpdate('create', obj);
+            }
+        }
+    }
 }

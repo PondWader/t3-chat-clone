@@ -1,5 +1,5 @@
 {
-    "name": "@t3-chat-clone/models",
+    "name": "@t3-chat-clone/stores",
     "module": "index.ts",
     "type": "module",
     "private": true,

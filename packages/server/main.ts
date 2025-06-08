@@ -1,4 +1,5 @@
 import { createDatabase } from "@t3-chat-clone/db/server";
+import { account, chatMessage } from "../stores/index.js";
 
 const DEFAULT_DB_URL = 'sqlite://database.sqlite';
 
@@ -6,7 +7,10 @@ const dbUrl = process.env.DB_URL ?? DEFAULT_DB_URL;
 
 const db = createDatabase({
     dbUrl,
-    models: []
+    stores: [
+        chatMessage,
+        account
+    ]
 })
 
 const server = Bun.serve({

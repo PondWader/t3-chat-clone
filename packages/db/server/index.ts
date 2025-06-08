@@ -1,5 +1,5 @@
 import { WebSocketHandler } from "bun";
-import { Model } from "../index.js";
+import { Action, Store } from "../index.js";
 import { connect, DatabaseDriverConn } from "./database.js";
 import { createWsBinding } from "./websocket.js";
 
@@ -7,19 +7,20 @@ export type Subscription = {
     unsubscribe(): void
 }
 
-export type Update = {
-
+export type Event<T> = {
+    action: Action
+    object: T
 }
 
 export type Database = {
     dbConn: DatabaseDriverConn
-    subscribe(userId: string, handler: () => void): Subscription
+    subscribe<T>(store: Store<T>, handler: (event: Event<T>) => void): Subscription
     bindWebSocket(): WebSocketHandler
 }
 
 export type CreateDatabaseOptions = {
     dbUrl: string
-    models: Model[]
+    stores: Store<any>[]
 }
 
 export function createDatabase(opts: CreateDatabaseOptions): Database {
@@ -38,4 +39,3 @@ export function createDatabase(opts: CreateDatabaseOptions): Database {
         }
     };
 }
-
