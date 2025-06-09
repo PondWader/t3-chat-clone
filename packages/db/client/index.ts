@@ -2,6 +2,7 @@ import { Store } from "../index.js"
 
 export type CreateClientOptions = {
     wsUrl: string
+    dbName: string
     stores: Store<any>[]
 }
 

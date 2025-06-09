@@ -13,14 +13,14 @@
     "packages/db": {
       "name": "@t3-chat-clone/db",
     },
-    "packages/models": {
-      "name": "@t3-chat-clone/models",
+    "packages/server": {
+      "name": "@t3-chat-clone/server",
       "dependencies": {
         "@t3-chat-clone/db": "workspace:*",
       },
     },
-    "packages/server": {
-      "name": "@t3-chat-clone/server",
+    "packages/stores": {
+      "name": "@t3-chat-clone/stores",
       "dependencies": {
         "@t3-chat-clone/db": "workspace:*",
       },
@@ -29,9 +29,9 @@
   "packages": {
     "@t3-chat-clone/db": ["@t3-chat-clone/db@workspace:packages/db"],
 
-    "@t3-chat-clone/models": ["@t3-chat-clone/models@workspace:packages/models"],
-
     "@t3-chat-clone/server": ["@t3-chat-clone/server@workspace:packages/server"],
+
+    "@t3-chat-clone/stores": ["@t3-chat-clone/stores@workspace:packages/stores"],
 
     "@types/bun": ["@types/bun@1.2.15", "", { "dependencies": { "bun-types": "1.2.15" } }, "sha512-U1ljPdBEphF0nw1MIk0hI7kPg7dFdPyM7EenHsp6W5loNHl7zqy6JQf/RKCgnUn2KDzUpkBwHPnEJEjII594bA=="],
 

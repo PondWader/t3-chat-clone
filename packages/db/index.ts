@@ -4,7 +4,9 @@ import z from "zod/v4";
 export type Action = "create" | "update" | "delete";
 
 export type Store<T> = {
+    name: string
     schema: ZodObject
+    indices: string[]
     validate(obj: T): void
 }
 
@@ -25,7 +27,9 @@ export function createStore<T extends ZodObject>(opts: CreateStoreOptions<T>): S
     }
 
     return {
+        name: opts.name,
         schema: opts.schema,
+        indices: [],
         validate(obj) {
             this.schema.parse(obj);
             if (opts.validateUpdate) {
