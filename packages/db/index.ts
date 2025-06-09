@@ -14,6 +14,7 @@ export type CreateStoreOptions<T extends ZodObject> = {
     name: string
     type: 'event' | 'singular'
     schema: T
+    indices?: Extract<keyof z.infer<T>, string>[]
     validateUpdate?(action: Action, object: z.infer<T>): void
 }
 
@@ -29,7 +30,7 @@ export function createStore<T extends ZodObject>(opts: CreateStoreOptions<T>): S
     return {
         name: opts.name,
         schema: opts.schema,
-        indices: [],
+        indices: opts.indices as any as string[] ?? [],
         validate(obj) {
             this.schema.parse(obj);
             if (opts.validateUpdate) {
@@ -37,4 +38,9 @@ export function createStore<T extends ZodObject>(opts: CreateStoreOptions<T>): S
             }
         }
     }
+}
+
+export type Event<T> = {
+    action: Action
+    object: T
 }

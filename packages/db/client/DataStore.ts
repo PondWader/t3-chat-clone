@@ -61,16 +61,48 @@ export class DataStore {
             const objectStore = tx.objectStore(store.name);
 
             for (const o of obj) {
-                objectStore.add(o);
+                objectStore.put(o);
             }
         })
     }
 
-    get<T>(store: Store<T>): Promise<T> {
+    getAll<T>(store: Store<T>, key: keyof T, value: string): Promise<T[]> {
+        if (typeof key !== 'string' || !store.indices.includes(key)) throw new Error(`Key "${key.toString()}" is not an index in store.`);
+
         return new Promise(async (resolve, reject) => {
             const tx = await this.#acquireTransaction(store.name, "readonly");
 
-            tx.objectStore(store.name)
+            const objectStore = tx.objectStore(store.name);
+
+            const index = objectStore.index(key);
+            const request = index.getAll(value);
+
+            request.onsuccess = () => {
+                resolve(request.result);
+            }
+            request.onerror = (e) => {
+                reject((e.target as any).error)
+            }
+        })
+    }
+
+    getLast<T>(store: Store<T>, key: keyof T): Promise<T> {
+        if (typeof key !== 'string' || !store.indices.includes(key)) throw new Error(`Key "${key.toString()}" is not an index in store.`);
+
+        return new Promise(async (resolve, reject) => {
+            const tx = await this.#acquireTransaction(store.name, "readonly");
+
+            const objectStore = tx.objectStore(store.name);
+
+            const index = objectStore.index(key);
+            const cursor = index.openCursor(null, "prev");
+
+            cursor.onsuccess = () => {
+                resolve(cursor.result!.value);
+            }
+            cursor.onerror = (e) => {
+                reject((e.target as any).error)
+            }
         })
     }
 }

@@ -13,7 +13,9 @@ export const chatMessage = createStore({
     name: 'chat_message',
     type: 'event',
     schema: z.object({
+        chatId: z.string(),
         role: z.string(),
-        content: z.string()
-    })
+        content: z.string(),
+    }),
+    indices: ["chatId"]
 });

@@ -6,5 +6,8 @@
         ".": "./index.ts",
         "./server": "./server/index.ts",
         "./client": "./client/index.ts"
+    },
+    "dependencies": {
+        "tiny-typed-emitter": "^2.1.0"
     }
 }

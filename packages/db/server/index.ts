@@ -1,15 +1,10 @@
 import { WebSocketHandler } from "bun";
-import { Action, Store } from "../index.js";
+import { Action, Event, Store } from "../index.js";
 import { connect, DatabaseDriverConn } from "./database.js";
 import { createWsBinding } from "./websocket.js";
 
 export type Subscription = {
     unsubscribe(): void
-}
-
-export type Event<T> = {
-    action: Action
-    object: T
 }
 
 export type Database = {

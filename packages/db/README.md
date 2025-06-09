@@ -117,6 +117,7 @@ Deletes are stored and pushed as their own events, when an object is deleted, th
 {
   "type": "remove",
   "data": {
+    "store": "chatMessage",
     "id": "01974f64-f739-7000-bd20-3b5fb4ea793c"
   }
 }
