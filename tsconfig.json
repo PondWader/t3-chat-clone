@@ -44,5 +44,9 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "useDefineForClassFields": true
-  }
+  },
+  "files": [],
+  "references": [
+    {"path": "./packages/app"},
+  ]
 }

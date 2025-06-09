@@ -1,0 +1,13 @@
+{
+	"name": "@t3-chat-clone/app",
+	"main": "mod.ts",
+	"dependencies": {
+		"preact": "^10.25.3",
+		"preact-iso": "^2.9.2",
+		"@preact/signals": "^2.2.0",
+		"@t3-chat-clone/db": "workspace:*",
+		"@t3-chat-clone/stores": "workspace:*"
+	},
+	"private": true,
+	"type": "module"
+}

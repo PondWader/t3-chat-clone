@@ -1,6 +1,6 @@
 {
     "name": "@t3-chat-clone/stores",
-    "module": "index.ts",
+    "main": "index.ts",
     "type": "module",
     "private": true,
     "dependencies": {

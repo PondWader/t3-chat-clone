@@ -18,15 +18,7 @@ export type CreateStoreOptions<T extends ZodObject> = {
     validateUpdate?(action: Action, object: z.infer<T>): void
 }
 
-const databaseNameRe = /^[a-zA-Z]+$/;
-
 export function createStore<T extends ZodObject>(opts: CreateStoreOptions<T>): Store<z.infer<T>> {
-    for (const fieldName of Object.keys(opts.schema)) {
-        if (!databaseNameRe.test(fieldName)) {
-            throw new Error(`Model schema field name "${fieldName}" is not valid.`);
-        }
-    }
-
     return {
         name: opts.name,
         schema: opts.schema,
@@ -44,3 +36,5 @@ export type Event<T> = {
     action: Action
     object: T
 }
+
+export type storeObject<S> = S extends Store<infer T> ? T : never;

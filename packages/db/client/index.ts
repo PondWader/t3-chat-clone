@@ -13,6 +13,7 @@ export type Client = {
     db: DataStore
     subscribe<T>(store: Store<T>, handler: (event: Event<T>) => void): Subscription
     push<T>(store: Store<T>, object: T): void
+    getAll<T>(store: Store<T>, key: keyof T, value: string): Promise<T[]>
 }
 
 export type CreateClientOptions = {
@@ -42,6 +43,9 @@ export function createClient(opts: CreateClientOptions): Client {
                     object: object as any
                 }
             })
+        },
+        getAll(store, key, value) {
+            return this.db.getAll(store, key, value);
         },
         subscribe(store, handler) {
             if (!subscriptions.has(store)) {
@@ -76,11 +80,11 @@ function bindConn(client: Client) {
 }
 
 async function createClientHello(client: Client): Promise<ClientHelloData> {
-    const syncStatus: Record<string, any> = {};
+    const syncStatus: Record<string, string | null> = {};
 
     for (const store of client.stores.values()) {
         const lastStore = await client.db.getLast(store, "id");
-        syncStatus[store.name] = lastStore.id;
+        syncStatus[store.name] = lastStore ? lastStore.id : null;
     }
 
     return {

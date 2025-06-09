@@ -13,7 +13,7 @@ export type Message<T extends MessageType> = {
 };
 
 export type ClientHelloData = {
-    syncStatus: Record<string, string>
+    syncStatus: Record<string, string | null>
 }
 
 export type UpdateData = {
