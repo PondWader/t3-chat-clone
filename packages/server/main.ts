@@ -7,7 +7,7 @@ const DEFAULT_DB_URL = 'sqlite://database.sqlite';
 
 const dbUrl = process.env.DB_URL ?? DEFAULT_DB_URL;
 
-const db = createDatabase({
+const db = await createDatabase({
     dbUrl,
     stores: [
         chatMessage,

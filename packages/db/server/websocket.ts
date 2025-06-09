@@ -12,7 +12,35 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
 
     for (const store of db.stores.values()) {
         db.subscribe(store, (e, ctx) => {
+            const conns = connections.get(e.user);
+            if (conns === undefined) return;
 
+            let msg: Message<MessageType>;
+            if (e.action === 'push' || e.action === 'partial') {
+                msg = {
+                    type: e.action,
+                    data: {
+                        store: store.name,
+                        object: e.object,
+                        id: e.id,
+                        clientId: e.clientId
+                    }
+                }
+            } else if (e.action === 'remove') {
+                msg = {
+                    type: 'remove',
+                    data: {
+                        store: store.name,
+                        id: e.id
+                    }
+                }
+            } else {
+                return;
+            }
+
+            for (const conn of conns) {
+                conn.send(JSON.stringify(msg));
+            }
         })
     }
 
@@ -26,7 +54,6 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
                     return;
                 }
                 const data = result.data;
-                // TODO: Sync here
 
                 const arr = connections.get(ws.data.user);
                 if (arr === undefined) {
@@ -34,9 +61,12 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
                 } else {
                     arr.push(ws);
                 }
+
+                // TODO: Sync here
+                data.syncStatus
             } else if (ws.data.synced) {
                 switch (msg.type) {
-                    case "update":
+                    case "push":
                         break;
                     case "remove":
                         break;

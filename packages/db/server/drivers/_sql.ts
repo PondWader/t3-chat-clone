@@ -15,6 +15,7 @@ export type Query = {
 
 export type QueryCreator = {
     createTableIfNotExists(name: string, columns: { [name: string]: Column }): string
+    createIndexIfNotExists(tableName: string, indexName: string, column: string): string
     select(tableName: string, conditions: { [name: string]: any }): Query
     insertInto(tableName: string, columns: { [name: string]: any }): Query
 }
@@ -43,6 +44,13 @@ export function createQueryCreator(opts: CreateQueryCreatorOptions): QueryCreato
             }
 
             return `CREATE TABLE IF NOT EXISTS ${quoteName(name)} (${fields});`
+        },
+        createIndexIfNotExists(tableName: string, indexName: string, column: string) {
+            if (!nameRe.test(tableName)) throw invalidNameError(tableName);
+            if (!nameRe.test(indexName)) throw invalidNameError(indexName);
+            if (!nameRe.test(column)) throw invalidNameError(column);
+
+            return `CREATE INDEX ${quoteName(indexName)} ON ${quoteName(tableName)}(${quoteName(column)});`;
         },
         select(tableName: string, conditions: { [name: string]: any }) {
             if (!nameRe.test(tableName)) throw invalidNameError(tableName);

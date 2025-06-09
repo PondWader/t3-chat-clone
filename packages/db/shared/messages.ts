@@ -1,10 +1,10 @@
 import { z } from "zod";
 
-export type MessageType = "client_hello" | "update" | "remove" | "partial" | "clear"
+export type MessageType = "client_hello" | "push" | "remove" | "partial" | "clear"
 
 export interface MessageDataMap {
     client_hello: ClientHelloData;
-    update: UpdateData;
+    push: PushData;
     remove: RemoveData;
     partial: PartialData;
     clear: ClearData;
@@ -20,13 +20,13 @@ export const clientHelloData = z.strictObject({
 })
 export type ClientHelloData = z.infer<typeof clientHelloData>
 
-export const updateData = z.strictObject({
+export const pushData = z.strictObject({
     store: z.string(),
     object: z.record(z.string(), z.any()),
     id: z.string(),
     clientId: z.string().optional()
 })
-export type UpdateData = z.infer<typeof updateData>
+export type PushData = z.infer<typeof pushData>
 
 export const removeData = z.strictObject({
     store: z.string(),

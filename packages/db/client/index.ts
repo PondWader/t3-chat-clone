@@ -33,11 +33,11 @@ export function createClient(opts: CreateClientOptions): Client {
         db: new DataStore(opts.dbName, opts.stores),
 
         push(store, object) {
-            store.validate(object);
+            store.validateClientAction('push', object);
 
             this.db.insert(store, object);
             this.conn.send({
-                type: "update",
+                type: "push",
                 data: {
                     id: "",
                     clientId: "",
@@ -71,7 +71,7 @@ export function createClient(opts: CreateClientOptions): Client {
 }
 
 function bindConn(client: Client) {
-    client.conn.on('update', data => {
+    client.conn.on('push', data => {
         const store = client.stores.get(data.store);
         if (!store) {
             throw new Error(`Missing store ${data.store}.`);

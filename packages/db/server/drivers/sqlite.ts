@@ -17,6 +17,9 @@ export function createSqliteConn(filename: string): DatabaseDriverConn {
         async createTableIfNotExists(name: string, columns: { [name: string]: Column }): Promise<void> {
             db.exec(queryCreator.createTableIfNotExists(name, columns));
         },
+        async createIndexIfNotExists(tableName, column): Promise<void> {
+            db.exec(queryCreator.createIndexIfNotExists(tableName, column, column));
+        },
         async query(tableName: string, conditions: { [name: string]: any }): Promise<unknown | null> {
             const q = queryCreator.select(tableName, conditions);
             return db.query(q.sql).get(...q.bindings);

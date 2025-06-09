@@ -1,13 +1,22 @@
 import type { ZodObject } from "zod/v4"
 import z from "zod/v4";
+import { MessageType } from "./shared/messages";
 
-export type Action = "create" | "update" | "delete";
+export type Action = Exclude<Exclude<MessageType, "client_hello">, "clear">;
+
+export type Event<T> = {
+    action: Action
+    user: string
+    id: string
+    object: T
+    clientId?: string
+}
 
 export type Store<T> = {
     name: string
     schema: ZodObject
     indices: string[]
-    validate(obj: T): void
+    validateClientAction(action: Exclude<Action, "partial">, obj: T): void
 }
 
 export type CreateStoreOptions<T extends ZodObject> = {
@@ -15,7 +24,7 @@ export type CreateStoreOptions<T extends ZodObject> = {
     type: 'event' | 'singular'
     schema: T
     indices?: Extract<keyof z.infer<T>, string>[]
-    validateUpdate?(action: Action, object: z.infer<T>): void
+    validateUpdate?(action: Exclude<Action, "partial">, object: z.infer<T>): boolean
 }
 
 export function createStore<T extends ZodObject>(opts: CreateStoreOptions<T>): Store<z.infer<T>> {
@@ -23,18 +32,12 @@ export function createStore<T extends ZodObject>(opts: CreateStoreOptions<T>): S
         name: opts.name,
         schema: opts.schema.strict(),
         indices: opts.indices as any as string[] ?? [],
-        validate(obj) {
+        validateClientAction(action: Exclude<Action, "partial">, obj) {
             this.schema.parse(obj);
-            if (opts.validateUpdate) {
-                opts.validateUpdate('create', obj);
+            if (opts.validateUpdate && !opts.validateUpdate(action, obj)) {
+                throw new Error("Illegal store operation.");
             }
         }
     }
 }
-
-export type Event<T> = {
-    action: Action
-    object: T
-}
-
 export type storeObject<S> = S extends Store<infer T> ? T : never;
