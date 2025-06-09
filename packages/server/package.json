@@ -5,6 +5,7 @@
     "private": true,
     "dependencies": {
         "@t3-chat-clone/db": "workspace:*",
-        "@t3-chat-clone/app": "workspace:*"
+        "@t3-chat-clone/app": "workspace:*",
+        "njwt": "^2.0.1"
     }
 }

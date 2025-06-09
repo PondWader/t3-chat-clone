@@ -9,9 +9,9 @@ export type Column = {
 }
 
 export type DatabaseDriverConn = {
-    createTableIfNotExists(name: string, columns: { [name: string]: Column }): void
-    query(tableName: string, conditions: { [name: string]: any }): unknown
-    create(tableName: string, columns: { [name: string]: any }): void
+    createTableIfNotExists(name: string, columns: { [name: string]: Column }): Promise<void>
+    query(tableName: string, conditions: { [name: string]: any }): Promise<unknown | null>
+    create(tableName: string, columns: { [name: string]: any }): Promise<void>
 }
 
 export function connect(dbUrl: string): DatabaseDriverConn {

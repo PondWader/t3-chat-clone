@@ -5,10 +5,10 @@ import { useContext, useEffect } from "preact/hooks";
 import { useSignal } from "@preact/signals";
 import { storeObject } from "@t3-chat-clone/db";
 
-const DBContext = createContext<Client>(null);
+const DBContext = createContext<Client | null>(null);
 
 export function useDB(): Client {
-    return useContext(DBContext);
+    return useContext(DBContext)!;
 }
 
 export function useChat(chatId: string) {
@@ -18,8 +18,17 @@ export function useChat(chatId: string) {
     useEffect(() => {
         db.getAll(chatMessage, 'chatId', chatId)
             .then(msgs => {
+                // TODO: Sort by created ats
                 signal.value = msgs;
             })
+
+        const sub = db.subscribe(chatMessage, (e) => {
+            // TODO: Update msgs
+        })
+
+        return () => {
+            sub.unsubscribe();
+        }
     }, []);
 
     return signal;

@@ -23,7 +23,7 @@
     // "noImplicitThis": true, // Included in "Strict"
     // "strictBindCallApply": true, // Included in "Strict"
     // "strictFunctionTypes": true, // Included in "Strict"
-    // "strictNullChecks": true, // Included in "Strict"
+    "strictNullChecks": true, // Included in "Strict"
     // "strictPropertyInitialization": true, // Included in "Strict"
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,

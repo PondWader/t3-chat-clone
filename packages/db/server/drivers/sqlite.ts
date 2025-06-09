@@ -14,14 +14,14 @@ export function createSqliteConn(filename: string): DatabaseDriverConn {
     })
 
     return {
-        createTableIfNotExists(name: string, columns: { [name: string]: Column }): void {
+        async createTableIfNotExists(name: string, columns: { [name: string]: Column }): Promise<void> {
             db.exec(queryCreator.createTableIfNotExists(name, columns));
         },
-        query(tableName: string, conditions: { [name: string]: any }): unknown {
+        async query(tableName: string, conditions: { [name: string]: any }): Promise<unknown | null> {
             const q = queryCreator.select(tableName, conditions);
             return db.query(q.sql).get(...q.bindings);
         },
-        create(tableName: string, columns: { [name: string]: any }): void {
+        async create(tableName: string, columns: { [name: string]: any }): Promise<void> {
             const q = queryCreator.insertInto(tableName, columns);
             db.exec(q.sql, ...q.bindings);
         }

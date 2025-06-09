@@ -3,14 +3,22 @@ import { Action, Event, Store } from "../index.js";
 import { connect, DatabaseDriverConn } from "./database.js";
 import { createWsBinding } from "./websocket.js";
 
+export type EventContext = {
+    user: string;
+    push<T>(store: Store<T>, object: T): void
+    getAll<T>(store: Store<T>, key: keyof T, value: string): Promise<T[]>
+}
+
 export type Subscription = {
     unsubscribe(): void
 }
 
 export type Database = {
+    stores: Map<string, Store<any>>
     dbConn: DatabaseDriverConn
-    subscribe<T>(store: Store<T>, handler: (event: Event<T>) => void): Subscription
-    bindWebSocket(): WebSocketHandler
+    subscribe<T>(store: Store<T>, handler: (event: Event<T>, ctx: EventContext) => void): Subscription
+    bindWebSocket(): WebSocketHandler<{ user: string; }>
+    getSafeTableName(tableName: string): string
 }
 
 export type CreateDatabaseOptions = {
@@ -23,6 +31,7 @@ export function createDatabase(opts: CreateDatabaseOptions): Database {
 
 
     return {
+        stores: new Map(opts.stores.map(s => [s.name, s])),
         dbConn,
         subscribe(userId, handler) {
             return {
@@ -31,6 +40,9 @@ export function createDatabase(opts: CreateDatabaseOptions): Database {
         },
         bindWebSocket() {
             return createWsBinding(this);
+        },
+        getSafeTableName(tableName) {
+            return '$' + tableName;
         }
     };
 }

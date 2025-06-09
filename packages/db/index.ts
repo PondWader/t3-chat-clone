@@ -21,7 +21,7 @@ export type CreateStoreOptions<T extends ZodObject> = {
 export function createStore<T extends ZodObject>(opts: CreateStoreOptions<T>): Store<z.infer<T>> {
     return {
         name: opts.name,
-        schema: opts.schema,
+        schema: opts.schema.strict(),
         indices: opts.indices as any as string[] ?? [],
         validate(obj) {
             this.schema.parse(obj);

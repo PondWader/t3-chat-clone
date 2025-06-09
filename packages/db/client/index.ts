@@ -33,6 +33,8 @@ export function createClient(opts: CreateClientOptions): Client {
         db: new DataStore(opts.dbName, opts.stores),
 
         push(store, object) {
+            store.validate(object);
+
             this.db.insert(store, object);
             this.conn.send({
                 type: "update",

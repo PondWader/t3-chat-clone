@@ -1,6 +1,6 @@
 import { Column } from "../database.js";
 
-const nameRe = /^(_|[a-zA-Z])+$/;
+const nameRe = /^(\$|_|[a-zA-Z])+$/;
 
 export type CreateQueryCreatorOptions = {
     quotations: {
@@ -42,7 +42,7 @@ export function createQueryCreator(opts: CreateQueryCreatorOptions): QueryCreato
                 fields = fields.slice(0, -2);
             }
 
-            return `CREATE TABLE ${quoteName(name)} (${fields});`
+            return `CREATE TABLE IF NOT EXISTS ${quoteName(name)} (${fields});`
         },
         select(tableName: string, conditions: { [name: string]: any }) {
             if (!nameRe.test(tableName)) throw invalidNameError(tableName);
