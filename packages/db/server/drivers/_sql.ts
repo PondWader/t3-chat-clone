@@ -133,8 +133,10 @@ function invalidNameError(name: string) {
 function matchConditions(conditions: Record<string, Condition>, bindings: any[] = [], quoteName: (n: string) => string): string {
     let sql = '';
     const cols = Object.keys(conditions);
-    for (const colName of cols) {
+    for (let i = 0; i < cols.length; i++) {
+        const colName = cols[i];
         if (!nameRe.test(colName)) throw invalidNameError(colName);
+
         let val = conditions[colName];
         let op = '=';
         if (typeof val === 'object') {
@@ -153,7 +155,8 @@ function matchConditions(conditions: Record<string, Condition>, bindings: any[] 
             }
         }
         bindings.push(val);
-        sql += `${quoteName(colName)} ${op} ?${bindings.length} `
+        sql += `${quoteName(colName)} ${op} ?${bindings.length}`
+        if (i + 1 !== cols.length) sql += ` AND `
     }
     return sql;
 }

@@ -15,7 +15,8 @@ export const chatMessage = createStore({
     schema: z.object({
         chatId: z.string(),
         role: z.string(),
-        content: z.string()
+        content: z.string(),
+        createdAt: z.int()
     }),
     indices: ["chatId"],
     validateClientAction(action, obj) {

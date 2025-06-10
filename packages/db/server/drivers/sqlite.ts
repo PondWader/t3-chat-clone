@@ -37,7 +37,8 @@ export function createSqliteConn(filename: string): DatabaseDriverConn {
             db.exec(q.sql, ...q.bindings);
         },
         async update(tableName, conditions, columns) {
-
+            const q = queryCreator.update(tableName, conditions, columns);
+            db.exec(q.sql, ...q.bindings);
         },
         async transaction(this: DatabaseDriverConn, cb) {
             db.exec("BEGIN TRANSACTION;")
