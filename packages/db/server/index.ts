@@ -77,7 +77,8 @@ export async function createDatabase(opts: CreateDatabaseOptions): Promise<Datab
             return userQueue.syncUserAction(user, async () => {
                 await dbConn.transaction(async () => {
                     await dbConn.update(store.name, {
-                        $id: objectId
+                        $id: objectId,
+                        $userId: user
                     }, {
                         $deleted: 1
                     })

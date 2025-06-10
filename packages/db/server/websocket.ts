@@ -1,6 +1,6 @@
 import { ServerWebSocket, WebSocketHandler } from "bun";
 import { Database } from "./index.js";
-import { clientHelloData, type Message, type MessageType } from "../shared/messages.js";
+import { clientHelloData, pushData, PushData, RemoveData, removeData, type Message, type MessageType } from "../shared/messages.js";
 import { Store } from "../index.js";
 import { specialColumns } from "./database.js";
 
@@ -45,6 +45,22 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
         })
     }
 
+    function handlePush(user: string, data: PushData) {
+        const store = db.stores.get(data.store);
+        if (store === undefined) return;
+        if (!store.validateClientActionSafe("push", data)) return;
+
+        db.push(store, user, data.object);
+    }
+
+    function handleRemove(user: string, data: RemoveData) {
+        const store = db.stores.get(data.store);
+        if (store === undefined) return;
+        if (!store.validateClientActionSafe("push", data)) return;
+
+        db.remove(store, user, data.id);
+    }
+
     return {
         async message(ws, message) {
             const msg = JSON.parse(message.toString()) as Message<MessageType>;
@@ -73,17 +89,17 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
 
                     await syncStore(db, ws, store, status);
                 }
-                // TODO: Sync here
-                data.syncStatus
 
                 ws.data.synced = true;
             } else if (ws.data.synced) {
-                switch (msg.type) {
-                    case "push":
-                        // NOTE: IF an ID is received that is less than the highest ID the data should be removed then rewritten
-                        break;
-                    case "remove":
-                        break;
+                if (msg.type === 'push') {
+                    const result = pushData.safeParse(msg.data);
+                    if (!result.success) return;
+                    handlePush(ws.data.user, result.data);
+                } else if (msg.type === 'remove') {
+                    const result = removeData.safeParse(msg.data);
+                    if (!result.success) return;
+                    handleRemove(ws.data.user, result.data);
                 }
             }
         },
@@ -112,15 +128,37 @@ function syncStore(db: Database, ws: ServerWebSocket<ConnData>, store: Store<any
                 $id: 'desc'
             })
         } else {
-            unsyncedObjs = await db.dbConn.queryAll(store.name, {
-                $id: {
-                    ge: lastId
-                },
+            // If the message doesn't exist everything should be resynced from the start
+            const lastSynced = await db.dbConn.query(store.name, {
+                $id: lastId,
                 $userId: ws.data.user,
-                $deleted: 0
-            }, {
-                $id: 'desc'
             })
+            if (lastSynced === null) {
+                const msg: Message<"clear"> = {
+                    type: "clear",
+                    data: {
+                        store: store.name
+                    }
+                }
+                ws.send(JSON.stringify(msg));
+
+                unsyncedObjs = await db.dbConn.queryAll(store.name, {
+                    $userId: ws.data.user,
+                    $deleted: 0
+                }, {
+                    $id: 'desc'
+                })
+            } else {
+                unsyncedObjs = await db.dbConn.queryAll(store.name, {
+                    $id: {
+                        ge: lastId
+                    },
+                    $userId: ws.data.user,
+                    $deleted: 0
+                }, {
+                    $id: 'desc'
+                })
+            }
         }
 
         for (const obj of unsyncedObjs) {

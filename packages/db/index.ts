@@ -17,6 +17,7 @@ export type Store<T> = {
     indices: string[]
     validate(object: T): void
     validateClientAction(action: Exclude<Action, "partial">, obj: T): void
+    validateClientActionSafe(action: Exclude<Action, "partial">, obj: T): boolean
 }
 
 export type CreateStoreOptions<T extends ZodObject> = {
@@ -40,7 +41,15 @@ export function createStore<T extends ZodObject>(opts: CreateStoreOptions<T>): S
             if (opts.validateClientAction && !opts.validateClientAction(action, obj)) {
                 throw new Error("Illegal store operation.");
             }
-        }
+        },
+        validateClientActionSafe(action, obj) {
+            try {
+                this.validateClientAction(action, obj);
+                return true;
+            } catch {
+                return false;
+            }
+        },
     }
 }
 export type storeObject<S> = S extends Store<infer T> ? T : never;
