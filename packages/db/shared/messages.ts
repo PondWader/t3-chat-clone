@@ -23,8 +23,7 @@ export type ClientHelloData = z.infer<typeof clientHelloData>
 export const pushData = z.strictObject({
     store: z.string(),
     object: z.record(z.string(), z.any()),
-    id: z.string(),
-    clientId: z.string().optional()
+    id: z.string()
 })
 export type PushData = z.infer<typeof pushData>
 

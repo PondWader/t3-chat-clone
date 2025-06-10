@@ -40,7 +40,6 @@ export function createClient(opts: CreateClientOptions): Client {
                 type: "push",
                 data: {
                     id: "",
-                    clientId: "",
                     store: "",
                     object: object as any
                 }

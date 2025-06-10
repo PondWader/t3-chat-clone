@@ -20,9 +20,13 @@ export function createSqliteConn(filename: string): DatabaseDriverConn {
         async createIndexIfNotExists(tableName, column): Promise<void> {
             db.exec(queryCreator.createIndexIfNotExists(tableName, column, column));
         },
-        async query(tableName: string, conditions: { [name: string]: any }): Promise<unknown | null> {
-            const q = queryCreator.select(tableName, conditions);
+        async query(tableName: string, conditions: { [name: string]: any }, sort): Promise<unknown | null> {
+            const q = queryCreator.select(tableName, conditions, sort);
             return db.query(q.sql).get(...q.bindings);
+        },
+        async queryAll(tableName: string, conditions: { [name: string]: any }, sort): Promise<unknown[]> {
+            const q = queryCreator.select(tableName, conditions, sort);
+            return db.query(q.sql).all(...q.bindings);
         },
         async create(tableName: string, columns: { [name: string]: any }): Promise<void> {
             const q = queryCreator.insertInto(tableName, columns);

@@ -9,7 +9,6 @@ export type Event<T> = {
     user: string
     id: string
     object: T
-    clientId?: string
 }
 
 export type Store<T> = {

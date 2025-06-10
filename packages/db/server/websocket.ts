@@ -1,6 +1,8 @@
 import { ServerWebSocket, WebSocketHandler } from "bun";
 import { Database } from "./index.js";
 import { clientHelloData, type Message, type MessageType } from "../shared/messages.js";
+import { Store } from "../index.js";
+import { specialColumns } from "./database.js";
 
 type ConnData = {
     synced: boolean;
@@ -22,8 +24,7 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
                     data: {
                         store: store.name,
                         object: e.object,
-                        id: e.id,
-                        clientId: e.clientId
+                        id: e.id
                     }
                 }
             } else if (e.action === 'remove') {
@@ -45,7 +46,7 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
     }
 
     return {
-        message(ws, message) {
+        async message(ws, message) {
             const msg = JSON.parse(message.toString()) as Message<MessageType>;
 
             if (!ws.data.synced && msg.type === 'client_hello') {
@@ -62,8 +63,20 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
                     arr.push(ws);
                 }
 
+                for (const storeName of Object.keys(data.syncStatus)) {
+                    const status = data.syncStatus[storeName];
+                    const store = db.stores.get(storeName);
+                    if (store === undefined) {
+                        ws.close();
+                        return;
+                    }
+
+                    await syncStore(db, ws, store, status);
+                }
                 // TODO: Sync here
                 data.syncStatus
+
+                ws.data.synced = true;
             } else if (ws.data.synced) {
                 switch (msg.type) {
                     case "push":
@@ -85,4 +98,44 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
             }
         },
     }
+}
+
+async function syncStore(db: Database, ws: ServerWebSocket<ConnData>, store: Store<any>, lastId: string | null) {
+    let unsyncedObjs: any[];
+    if (lastId === null) {
+        unsyncedObjs = await db.dbConn.queryAll(store.name, {
+            $userId: ws.data.user
+        }, {
+            $id: 'desc'
+        })
+    } else {
+        unsyncedObjs = await db.dbConn.queryAll(store.name, {
+            $id: {
+                gt: lastId
+            },
+            $userId: ws.data.user
+        }, {
+            $id: 'desc'
+        })
+    }
+
+    for (const obj of unsyncedObjs) {
+        const id = obj.$id;
+
+        for (const colName of Object.keys(specialColumns)) {
+            delete obj[colName];
+        }
+
+        const msg: Message<"push"> = {
+            type: 'push',
+            data: {
+                object: obj,
+                store: store.name,
+                id: id
+            }
+        }
+
+        ws.send(JSON.stringify(msg));
+    }
+
 }

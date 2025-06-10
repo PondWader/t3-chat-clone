@@ -10,10 +10,21 @@ export type Column = {
     type: ColumnType
 }
 
+export type Condition = string | number | {
+    gt: string | number
+} | {
+    lt: string | number
+} | {
+    le: string | number
+} | {
+    ge: string | number
+}
+
 export type DatabaseDriverConn = {
     createTableIfNotExists(name: string, columns: { [name: string]: Column }): Promise<void>
     createIndexIfNotExists(tableName: string, column: string): Promise<void>
-    query(tableName: string, conditions: { [name: string]: any }): Promise<unknown | null>
+    query(tableName: string, conditions: Record<string, Condition>, sort?: Record<string, 'asc' | 'desc'>): Promise<unknown | null>
+    queryAll(tableName: string, conditions: Record<string, Condition>, sort?: Record<string, 'asc' | 'desc'>): Promise<unknown[]>
     create(tableName: string, columns: { [name: string]: any }): Promise<void>
 }
 
@@ -29,8 +40,11 @@ export function connect(dbUrl: string): DatabaseDriverConn {
 
 const validNameRe = /^(_|[a-zA-Z])+$/
 
-const specialColumns: Record<string, Column> = {
+export const specialColumns: Record<string, Column> = {
     "$id": {
+        type: 'text'
+    },
+    "$userId": {
         type: 'text'
     }
 }
