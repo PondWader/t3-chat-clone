@@ -8,6 +8,7 @@ export class DataStore {
         const request = window.indexedDB.open(dbName, 1);
         request.onerror = (event) => {
             console.error(`Failed to open IndexedDB database: ${(event.target as any).error?.message}`);
+            alert("Failed to open IndexedDB. This website will not behave as expected.");
         };
         request.onsuccess = (event) => {
             this.#db = (event.target as any).result as IDBDatabase;

@@ -1,4 +1,5 @@
 import { Event, Store } from "../index.js"
+import { createEventSource } from "../shared/events.js"
 import { ClientHelloData } from "../shared/messages.js"
 import { Connection } from "./Connection.js"
 import { DataStore } from "./DataStore.js"
@@ -23,7 +24,7 @@ export type CreateClientOptions = {
 }
 
 export function createClient(opts: CreateClientOptions): Client {
-    const subscriptions = new Map<Store<any>, ((event: Event<any>) => void)[]>();
+    const eventSource = createEventSource();
 
     const client: Client = {
         stores: new Map(opts.stores.map(s => [s.name, s])),
@@ -48,20 +49,7 @@ export function createClient(opts: CreateClientOptions): Client {
         getAll(store, key, value) {
             return this.db.getAll(store, key, value);
         },
-        subscribe(store, handler) {
-            if (!subscriptions.has(store)) {
-                subscriptions.set(store, []);
-            }
-            subscriptions.get(store)!.push(handler);
-
-            return {
-                unsubscribe() {
-                    subscriptions.set(store, subscriptions.get(store)!.filter(v => {
-                        return v !== handler;
-                    }))
-                }
-            }
-        }
+        subscribe: eventSource.subscribe
     };
 
     bindConn(client);

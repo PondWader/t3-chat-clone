@@ -17,6 +17,8 @@ export type QueryCreator = {
     createTableIfNotExists(name: string, columns: { [name: string]: Column }): string
     createIndexIfNotExists(tableName: string, indexName: string, ...column: string[]): string
     select(tableName: string, conditions: Record<string, Condition>, sort?: Record<string, 'asc' | 'desc'>): Query
+    delete(tableName: string, conditions: Record<string, Condition>): Query
+    update(tableName: string, conditions: Record<string, Condition>, columns: Record<string, any>): Query
     insertInto(tableName: string, columns: { [name: string]: any }): Query
 }
 
@@ -62,35 +64,9 @@ export function createQueryCreator(opts: CreateQueryCreatorOptions): QueryCreato
 
             let sql = `SELECT * FROM ${quoteName(tableName)}`;
 
-            const cols = Object.keys(conditions)
-            if (cols.length !== 0) {
-                sql += ` WHERE `;
-            }
-            let i = 0;
+            sql += ` WHERE `;
             const bindings: any[] = [];
-            for (const colName of cols) {
-                if (!nameRe.test(colName)) throw invalidNameError(colName);
-                let val = conditions[colName];
-                let op = '=';
-                if (typeof val === 'object') {
-                    if ('gt' in val) {
-                        val = val.gt;
-                        op = '>';
-                    } else if ('lt' in val) {
-                        val = val.lt;
-                        op = '<';
-                    } else if ('le' in val) {
-                        val = val.le;
-                        op = '<=';
-                    } else if ('ge' in val) {
-                        val = val.ge;
-                        op = '>=';
-                    }
-                }
-                bindings.push(val);
-
-                sql += `${quoteName(colName)} ${op} ?${++i} `
-            }
+            sql += matchConditions(conditions, bindings, quoteName);
 
             if (sort !== undefined && Object.keys(sort).length !== 0) {
                 sql += 'ORDER BY ';
@@ -107,6 +83,30 @@ export function createQueryCreator(opts: CreateQueryCreatorOptions): QueryCreato
                 sql,
                 bindings
             };
+        },
+        update(tableName, conditions, columns) {
+            if (!nameRe.test(tableName)) throw invalidNameError(tableName);
+
+            const bindings: any[] = Object.values(columns);
+            let sql = `UPDATE ${quoteName(tableName)} SET `
+            let i = 0;
+            for (const col in columns) {
+                if (!nameRe.test(col)) throw invalidNameError(col);
+                sql += `${quoteName(col)} = ?${++i}, `
+            }
+            if (i !== 0) sql = sql.slice(0, -2);
+
+            sql += " WHERE " + matchConditions(conditions, bindings, quoteName) + ";";
+
+            return {
+                sql,
+                bindings
+            }
+        },
+        delete(tableName, conditions) {
+            const query = this.select(tableName, conditions);
+            query.sql = 'DELETE' + query.sql.slice(8);
+            return query;
         },
         insertInto(tableName: string, columns: { [name: string]: any }) {
             if (!nameRe.test(tableName)) throw invalidNameError(tableName);
@@ -128,4 +128,32 @@ export function createQueryCreator(opts: CreateQueryCreatorOptions): QueryCreato
 
 function invalidNameError(name: string) {
     return new Error(`Model schema field name "${name}" is not valid.`)
+}
+
+function matchConditions(conditions: Record<string, Condition>, bindings: any[] = [], quoteName: (n: string) => string): string {
+    let sql = '';
+    const cols = Object.keys(conditions);
+    for (const colName of cols) {
+        if (!nameRe.test(colName)) throw invalidNameError(colName);
+        let val = conditions[colName];
+        let op = '=';
+        if (typeof val === 'object') {
+            if ('gt' in val) {
+                val = val.gt;
+                op = '>';
+            } else if ('lt' in val) {
+                val = val.lt;
+                op = '<';
+            } else if ('le' in val) {
+                val = val.le;
+                op = '<=';
+            } else if ('ge' in val) {
+                val = val.ge;
+                op = '>=';
+            }
+        }
+        bindings.push(val);
+        sql += `${quoteName(colName)} ${op} ?${bindings.length} `
+    }
+    return sql;
 }

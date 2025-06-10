@@ -18,7 +18,7 @@ export const chatMessage = createStore({
         content: z.string()
     }),
     indices: ["chatId"],
-    validateUpdate(action, obj) {
+    validateClientAction(action, obj) {
         return action !== 'push' || obj.role === "user";
     }
 });

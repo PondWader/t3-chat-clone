@@ -26,6 +26,13 @@ export type DatabaseDriverConn = {
     query(tableName: string, conditions: Record<string, Condition>, sort?: Record<string, 'asc' | 'desc'>): Promise<unknown | null>
     queryAll(tableName: string, conditions: Record<string, Condition>, sort?: Record<string, 'asc' | 'desc'>): Promise<unknown[]>
     create(tableName: string, columns: { [name: string]: any }): Promise<void>
+    remove(tableName: string, conditions: Record<string, Condition>): Promise<void>
+    update(tableName: string, conditions: Record<string, Condition>, columns: Record<string, any>): Promise<void>
+    /**
+     * Note: Transactions should only perform database operations and make no other asynchronous calls.
+     * @param cb 
+     */
+    transaction(cb: () => Promise<void>): Promise<void>
 }
 
 export function connect(dbUrl: string): DatabaseDriverConn {
@@ -47,6 +54,9 @@ export const specialColumns: Record<string, Column> = {
     },
     "$userId": {
         type: 'text'
+    },
+    "$deleted": {
+        type: 'integer'
     }
 }
 

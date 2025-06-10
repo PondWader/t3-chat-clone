@@ -13,7 +13,7 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
     const connections = new Map<string, ServerWebSocket<ConnData>[]>();
 
     for (const store of db.stores.values()) {
-        db.subscribe(store, (e, ctx) => {
+        db.subscribe(store, (e) => {
             const conns = connections.get(e.user);
             if (conns === undefined) return;
 
@@ -101,61 +101,65 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
     }
 }
 
-async function syncStore(db: Database, ws: ServerWebSocket<ConnData>, store: Store<any>, lastId: string | null) {
-    let unsyncedObjs: any[];
-    if (lastId === null) {
-        unsyncedObjs = await db.dbConn.queryAll(store.name, {
-            $userId: ws.data.user
-        }, {
-            $id: 'desc'
-        })
-    } else {
-        unsyncedObjs = await db.dbConn.queryAll(store.name, {
-            $id: {
-                ge: lastId
-            },
-            $userId: ws.data.user
-        }, {
-            $id: 'desc'
-        })
-    }
-
-    for (const obj of unsyncedObjs) {
-        const id = obj.$id;
-
-        for (const colName of Object.keys(specialColumns)) {
-            delete obj[colName];
+function syncStore(db: Database, ws: ServerWebSocket<ConnData>, store: Store<any>, lastId: string | null) {
+    return db.userQueue.syncUserAction(ws.data.user, async () => {
+        let unsyncedObjs: any[];
+        if (lastId === null) {
+            unsyncedObjs = await db.dbConn.queryAll(store.name, {
+                $userId: ws.data.user,
+                $deleted: 0
+            }, {
+                $id: 'desc'
+            })
+        } else {
+            unsyncedObjs = await db.dbConn.queryAll(store.name, {
+                $id: {
+                    ge: lastId
+                },
+                $userId: ws.data.user,
+                $deleted: 0
+            }, {
+                $id: 'desc'
+            })
         }
 
-        const msg: Message<"push"> = {
-            type: 'push',
-            data: {
-                object: obj,
-                store: store.name,
-                id: id
+        for (const obj of unsyncedObjs) {
+            const id = obj.$id;
+
+            for (const colName of Object.keys(specialColumns)) {
+                delete obj[colName];
             }
-        }
 
-        ws.send(JSON.stringify(msg));
-    }
-
-    if (typeof lastId === 'string') {
-        const deletions = await db.dbConn.queryAll('$deletions', {
-            id: {
-                ge: lastId
-            },
-            store: store.name,
-            userId: ws.data.user
-        }) as any[]
-        for (const deletion of deletions) {
-            const msg: Message<"remove"> = {
-                type: 'remove',
+            const msg: Message<"push"> = {
+                type: 'push',
                 data: {
+                    object: obj,
                     store: store.name,
-                    id: deletion.objectId
+                    id: id
                 }
             }
+
             ws.send(JSON.stringify(msg));
         }
-    }
+
+        if (typeof lastId === 'string') {
+            const deletions = await db.dbConn.queryAll('$deletions', {
+                id: {
+                    ge: lastId
+                },
+                store: store.name,
+                userId: ws.data.user
+            }) as any[]
+            for (const deletion of deletions) {
+                const msg: Message<"remove"> = {
+                    type: 'remove',
+                    data: {
+                        store: store.name,
+                        id: deletion.objectId
+                    }
+                }
+                ws.send(JSON.stringify(msg));
+            }
+        }
+    })
 }

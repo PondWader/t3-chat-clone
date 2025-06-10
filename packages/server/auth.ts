@@ -45,7 +45,7 @@ export async function createAuthHandler(db: Database) {
             if (accessToken !== null) {
                 if (accessToken.startsWith('guest_')) {
                     const jwt = accessToken.slice(6)
-                    const verifiedUuid = verifyJwt(signingKey, jwt);
+                    const verifiedUuid = verifyJwt(signingKey, jwt, true);
 
                     if (verifiedUuid === null) {
                         req.cookies.delete('access-token');
@@ -76,7 +76,8 @@ function createGuest(signingKey: Buffer, cookies: Bun.CookieMap) {
     const uuid = Bun.randomUUIDv7();
 
     const refreshJwt = nJwt.create({
-        sub: uuid
+        sub: uuid,
+        guest: true
     }, signingKey);
     // @ts-expect-error - no time means no expiration
     refreshJwt.setExpiration();
@@ -89,10 +90,11 @@ function createGuest(signingKey: Buffer, cookies: Bun.CookieMap) {
     return uuid;
 }
 
-function verifyJwt(signingKey: Buffer, jwt: string): string | null {
+function verifyJwt(signingKey: Buffer, jwt: string, guest: boolean): string | null {
     try {
         const verified = nJwt.verify(jwt, signingKey);
         if (verified === undefined) return null;
+        if ((verified.body as any).guest !== guest) return null;
         return (verified.body as any).sub;
     } catch {
         return null;

@@ -15,6 +15,7 @@ export type Store<T> = {
     name: string
     schema: ZodObject
     indices: string[]
+    validate(object: T): void
     validateClientAction(action: Exclude<Action, "partial">, obj: T): void
 }
 
@@ -23,7 +24,7 @@ export type CreateStoreOptions<T extends ZodObject> = {
     type: 'event' | 'singular'
     schema: T
     indices?: Extract<keyof z.infer<T>, string>[]
-    validateUpdate?(action: Exclude<Action, "partial">, object: z.infer<T>): boolean
+    validateClientAction?(action: Exclude<Action, "partial">, object: z.infer<T>): boolean
 }
 
 export function createStore<T extends ZodObject>(opts: CreateStoreOptions<T>): Store<z.infer<T>> {
@@ -31,9 +32,12 @@ export function createStore<T extends ZodObject>(opts: CreateStoreOptions<T>): S
         name: opts.name,
         schema: opts.schema.strict(),
         indices: opts.indices as any as string[] ?? [],
-        validateClientAction(action: Exclude<Action, "partial">, obj) {
+        validate(obj) {
             this.schema.parse(obj);
-            if (opts.validateUpdate && !opts.validateUpdate(action, obj)) {
+        },
+        validateClientAction(action: Exclude<Action, "partial">, obj) {
+            this.validate(obj);
+            if (opts.validateClientAction && !opts.validateClientAction(action, obj)) {
                 throw new Error("Illegal store operation.");
             }
         }
