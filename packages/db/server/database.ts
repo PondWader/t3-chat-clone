@@ -38,11 +38,12 @@ export function connect(dbUrl: string): DatabaseDriverConn {
     throw new Error(`"${url.protocol}" is not a supported database protocol.`)
 }
 
-const validNameRe = /^(_|[a-zA-Z])+$/
+const validNameRe = /^(_|[a-zA-Z0-9])+$/
 
 export const specialColumns: Record<string, Column> = {
     "$id": {
-        type: 'text'
+        type: 'text',
+        primaryKey: true
     },
     "$userId": {
         type: 'text'
@@ -63,7 +64,8 @@ export async function createMetaTables(dbConn: DatabaseDriverConn) {
 export async function createStoreTable(dbConn: DatabaseDriverConn, store: Store<any>) {
     if (!validNameRe.test(store.name)) throw new Error(`Store name "${store.name}" is not valid!`)
 
-    zodSchemaToDbSchema(store.schema);
+    const dbSchema = zodSchemaToDbSchema(store.schema);
+    await dbConn.createTableIfNotExists(store.name, dbSchema);
 
     for (const index of store.indices) {
         await dbConn.createIndexIfNotExists(store.name, index);
@@ -72,11 +74,26 @@ export async function createStoreTable(dbConn: DatabaseDriverConn, store: Store<
 
 function zodSchemaToDbSchema(schema: ZodObject): Record<string, Column> {
     const shape = schema.def.shape;
+    const columns: Record<string, Column> = {
+        ...specialColumns,
+    };
     for (const key in shape) {
         if (!validNameRe.test(key)) throw new Error(`Key name "${key}" is not valid!`);
-
-        console.log(shape[key].def);
+        columns[key] = zodDefToDbType(shape[key].def);
     }
-    process.exit()
-    return {}
+
+    return columns
+}
+
+function zodDefToDbType(def: any): Column {
+    if (def.type === 'string') {
+        return { type: 'text' };
+    } else if (def.type === 'nullable') {
+        return { nullable: true, type: zodDefToDbType(def.innerType.def).type }
+    } else if (def.type === 'number' && def.format === 'safeint' || def.format === 'int32' || def.format === 'int64') {
+        return { type: 'integer' }
+    } else if (def.type === 'number' && def.format === undefined) {
+        return { type: 'real' };
+    }
+    throw new Error(`Unexpected Zod type found in store definition: "${def.type}"! Types should be numbers/integers/strings.`);
 }

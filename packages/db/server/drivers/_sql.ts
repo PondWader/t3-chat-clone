@@ -1,6 +1,6 @@
 import { Column, Condition } from "../database.js";
 
-const nameRe = /^(\$|_|[a-zA-Z])+$/;
+const nameRe = /^(\$|_|[a-zA-Z0-9])+$/;
 
 export type CreateQueryCreatorOptions = {
     quotations: {
@@ -33,7 +33,7 @@ export function createQueryCreator(opts: CreateQueryCreatorOptions): QueryCreato
             let fields = ``;
             for (const [colName, col] of Object.entries(columns)) {
                 if (!nameRe.test(colName)) throw invalidNameError(colName);
-                fields += `${colName} ${col.type.toUpperCase()}`
+                fields += `${quoteName(colName)} ${col.type.toUpperCase()}`
                 if (!col.nullable) {
                     fields += ` NOT NULL`
                 }
@@ -55,7 +55,7 @@ export function createQueryCreator(opts: CreateQueryCreatorOptions): QueryCreato
                 if (!nameRe.test(c)) throw invalidNameError(c);
             })
 
-            return `CREATE INDEX ${quoteName(indexName)} ON ${quoteName(tableName)}(${column.map(v => quoteName(v)).join(', ')});`;
+            return `CREATE INDEX IF NOT EXISTS ${quoteName(indexName)} ON ${quoteName(tableName)}(${column.map(v => quoteName(v)).join(', ')});`;
         },
         select(tableName: string, conditions: Record<string, Condition>, sort?: Record<string, 'asc' | 'desc'>) {
             if (!nameRe.test(tableName)) throw invalidNameError(tableName);
