@@ -1,6 +1,6 @@
 import { WebSocketHandler } from "bun";
 import { Action, Event, Store } from "../index.js";
-import { connect, createStoreTable, DatabaseDriverConn } from "./database.js";
+import { connect, createMetaTables, createStoreTable, DatabaseDriverConn } from "./database.js";
 import { createWsBinding } from "./websocket.js";
 
 export type EventContext = {
@@ -32,6 +32,7 @@ export type CreateDatabaseOptions = {
 export async function createDatabase(opts: CreateDatabaseOptions): Promise<Database> {
     const dbConn = connect(opts.dbUrl);
 
+    await createMetaTables(dbConn);
     for (const store of opts.stores) {
         await createStoreTable(dbConn, store);
     }

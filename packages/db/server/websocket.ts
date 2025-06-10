@@ -80,6 +80,7 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
             } else if (ws.data.synced) {
                 switch (msg.type) {
                     case "push":
+                        // NOTE: IF an ID is received that is less than the highest ID the data should be removed then rewritten
                         break;
                     case "remove":
                         break;
@@ -111,7 +112,7 @@ async function syncStore(db: Database, ws: ServerWebSocket<ConnData>, store: Sto
     } else {
         unsyncedObjs = await db.dbConn.queryAll(store.name, {
             $id: {
-                gt: lastId
+                ge: lastId
             },
             $userId: ws.data.user
         }, {
@@ -138,4 +139,23 @@ async function syncStore(db: Database, ws: ServerWebSocket<ConnData>, store: Sto
         ws.send(JSON.stringify(msg));
     }
 
+    if (typeof lastId === 'string') {
+        const deletions = await db.dbConn.queryAll('$deletions', {
+            id: {
+                ge: lastId
+            },
+            store: store.name,
+            userId: ws.data.user
+        }) as any[]
+        for (const deletion of deletions) {
+            const msg: Message<"remove"> = {
+                type: 'remove',
+                data: {
+                    store: store.name,
+                    id: deletion.objectId
+                }
+            }
+            ws.send(JSON.stringify(msg));
+        }
+    }
 }

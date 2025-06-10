@@ -15,7 +15,7 @@ export type Query = {
 
 export type QueryCreator = {
     createTableIfNotExists(name: string, columns: { [name: string]: Column }): string
-    createIndexIfNotExists(tableName: string, indexName: string, column: string): string
+    createIndexIfNotExists(tableName: string, indexName: string, ...column: string[]): string
     select(tableName: string, conditions: Record<string, Condition>, sort?: Record<string, 'asc' | 'desc'>): Query
     insertInto(tableName: string, columns: { [name: string]: any }): Query
 }
@@ -37,6 +37,9 @@ export function createQueryCreator(opts: CreateQueryCreatorOptions): QueryCreato
                 if (!col.nullable) {
                     fields += ` NOT NULL`
                 }
+                if (col.primaryKey) {
+                    fields += ` PRIMARY KEY`
+                }
                 fields += `, `
             }
             if (fields.length != 0) {
@@ -45,12 +48,14 @@ export function createQueryCreator(opts: CreateQueryCreatorOptions): QueryCreato
 
             return `CREATE TABLE IF NOT EXISTS ${quoteName(name)} (${fields});`
         },
-        createIndexIfNotExists(tableName: string, indexName: string, column: string) {
+        createIndexIfNotExists(tableName: string, indexName: string, ...column: string[]) {
             if (!nameRe.test(tableName)) throw invalidNameError(tableName);
             if (!nameRe.test(indexName)) throw invalidNameError(indexName);
-            if (!nameRe.test(column)) throw invalidNameError(column);
+            column.forEach(c => {
+                if (!nameRe.test(c)) throw invalidNameError(c);
+            })
 
-            return `CREATE INDEX ${quoteName(indexName)} ON ${quoteName(tableName)}(${quoteName(column)});`;
+            return `CREATE INDEX ${quoteName(indexName)} ON ${quoteName(tableName)}(${column.map(v => quoteName(v)).join(', ')});`;
         },
         select(tableName: string, conditions: Record<string, Condition>, sort?: Record<string, 'asc' | 'desc'>) {
             if (!nameRe.test(tableName)) throw invalidNameError(tableName);
