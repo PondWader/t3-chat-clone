@@ -1,3 +1,11 @@
+### Features
+
+##### Listed:
+
+##### Extra:
+
+✔ Sync between devices without an account by scanning QR code/entering link.
+
 ### Starting the server
 
 First install the project dependencies:

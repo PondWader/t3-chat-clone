@@ -15,10 +15,10 @@ export class UserQueue {
 
             try {
                 await action();
+                resolve();
             } catch (err) {
                 reject(err);
             }
-            resolve();
 
             const next = userQueue.shift();
             if (next !== undefined) {

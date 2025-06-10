@@ -165,3 +165,7 @@ db.subscribe(chatMessage, async (event, ctx) => {
 ```
 
 This basic example will respond to every message with "Hello, how can I help you?".
+
+### Extra
+
+When the client pushes data. It will immediately add it in memory. The next time it receives any message from the server it will remove this message from memory.

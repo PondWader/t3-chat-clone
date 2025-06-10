@@ -36,7 +36,8 @@ export function createClient(opts: CreateClientOptions): Client {
         push(store, object) {
             store.validateClientAction('push', object);
 
-            this.db.insert(store, object);
+            // TODO: push to memory
+
             this.conn.send({
                 type: "push",
                 data: {
@@ -65,6 +66,20 @@ function bindConn(client: Client) {
         }
 
         client.db.insert(store, data);
+    })
+    client.conn.on('remove', data => {
+
+    })
+    client.conn.on('clear', data => {
+        const store = client.stores.get(data.store);
+        if (!store) {
+            throw new Error(`Missing store ${data.store}.`);
+        }
+
+        client.db.clear(store);
+    })
+    client.conn.on('partial', data => {
+
     })
 }
 
