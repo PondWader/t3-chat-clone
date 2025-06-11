@@ -1,6 +1,6 @@
 import { Store } from "../index.js";
 
-export type DataStoreObject<T> = T & { $id: string };
+export type PersistentStoreObject<T> = T & { $id: string };
 
 export class PersistentStore {
     #db?: IDBDatabase;
@@ -13,7 +13,7 @@ export class PersistentStore {
         const request = window.indexedDB.open(dbName, 1);
         request.onerror = (event) => {
             console.error(`Failed to open IndexedDB database: ${(event.target as any).error?.message}`);
-            alert("Failed to open IndexedDB. This website will not behave as expected.");
+            alert("Failed to open IndexedDB database. This website will not behave as expected.");
         };
         request.onsuccess = (event) => {
             this.#db = (event.target as any).result as IDBDatabase;
@@ -77,7 +77,7 @@ export class PersistentStore {
         })
     }
 
-    insert<T>(store: Store<T>, ...obj: DataStoreObject<T>[]): Promise<void> {
+    insert<T>(store: Store<T>, ...obj: PersistentStoreObject<T>[]): Promise<void> {
         return this.#acquireLockTransaction(store.name, "readwrite", tx => {
             return new Promise(async (resolve, reject) => {
                 tx.onerror = (e) => {
@@ -97,15 +97,20 @@ export class PersistentStore {
         })
     }
 
-    getAll<T>(store: Store<T>, key: keyof DataStoreObject<T>, value: any): Promise<DataStoreObject<T>[]> {
+    getAll<T>(store: Store<T>, key: keyof PersistentStoreObject<T>, value: any): Promise<PersistentStoreObject<T>[]> {
         if (typeof key !== 'string' || !this.#isIndex(store, key)) throw new Error(`Key "${key.toString()}" is not an index in store.`);
 
         return this.#acquireLockTransaction(store.name, "readonly", tx => {
             return new Promise(async (resolve, reject) => {
                 const objectStore = tx.objectStore(store.name);
 
-                const index = objectStore.index(key);
-                const request = index.getAll(value);
+                let request;
+                if (key === '$id') {
+                    request = objectStore.getAll(value);
+                } else {
+                    const index = objectStore.index(key);
+                    request = index.getAll(value);
+                }
 
                 request.onsuccess = () => {
                     resolve(request.result);
@@ -117,15 +122,20 @@ export class PersistentStore {
         })
     }
 
-    getLast<T>(store: Store<T>, key: keyof DataStoreObject<T>): Promise<DataStoreObject<T> | null> {
+    getLast<T>(store: Store<T>, key: keyof PersistentStoreObject<T>): Promise<PersistentStoreObject<T> | null> {
         if (typeof key !== 'string' || !this.#isIndex(store, key)) throw new Error(`Key "${key.toString()}" is not an index in store.`);
 
         return this.#acquireLockTransaction(store.name, "readonly", tx => {
             return new Promise(async (resolve, reject) => {
                 const objectStore = tx.objectStore(store.name);
 
-                const index = objectStore.index(key);
-                const cursor = index.openCursor(null, "prev");
+                let cursor;
+                if (key === '$id') {
+                    cursor = objectStore.openCursor(null, "prev");
+                } else {
+                    const index = objectStore.index(key);
+                    cursor = index.openCursor(null, "prev");
+                }
 
                 cursor.onsuccess = () => {
                     if (cursor.result === null) resolve(null);

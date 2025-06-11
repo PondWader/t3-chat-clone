@@ -1,9 +1,11 @@
 import { Store } from "../index.js";
 
-export class MemoryStore {
-    #stores: Map<string, any[]> = new Map();
+export type MemoryStoreObject<T> = T & { $msgId: string };
 
-    insert<T>(store: Store<T>, ...obj: T[]): void {
+export class MemoryStore {
+    #stores: Map<string, MemoryStoreObject<any>[]> = new Map();
+
+    insert<T>(store: Store<T>, ...obj: MemoryStoreObject<T>[]): void {
         if (!this.#stores.has(store.name)) this.#stores.set(store.name, [...obj]);
         else {
             const storeMem = this.#stores.get(store.name)!;
@@ -11,13 +13,28 @@ export class MemoryStore {
         }
     }
 
-    getAll<T>(store: Store<T>, key: keyof T, value: string): T[] {
+    remove<T>(store: Store<T>, key: keyof T, value: string): void {
+        if (!this.#stores.has(store.name)) return
+        this.#stores.set(store.name,
+            this.#stores.get(store.name)!.filter(o => o[key] !== value)
+        )
+        return;
+    }
+
+    getFirst<T>(store: Store<T>, key: keyof T, value: string): MemoryStoreObject<T> | null {
+        if (!this.#stores.has(store.name)) return null
+        return this.#stores.get(store.name)!
+            .find(v => v[key] === value);
+    }
+
+
+    getAll<T>(store: Store<T>, key: keyof T, value: string): MemoryStoreObject<T>[] {
         if (!this.#stores.has(store.name)) return [];
         return this.#stores.get(store.name)!
             .filter(v => v[key] === value);
     }
 
-    getLast<T>(store: Store<T>, key: keyof T): T | null {
+    getLast<T>(store: Store<T>, key: keyof MemoryStoreObject<T>): MemoryStoreObject<T> | null {
         if (!this.#stores.has(store.name)) return null;
         const objs = this.#stores.get(store.name)!;
         if (objs.length === 0) return null;

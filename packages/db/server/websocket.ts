@@ -50,7 +50,7 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
     function handlePush(user: string, data: PushData, msgId?: string) {
         const store = db.stores.get(data.store);
         if (store === undefined) return;
-        if (!store.validateClientActionSafe("push", data)) return;
+        if (!store.validateClientActionSafe("push", data.object)) return;
 
         db.push(store, user, data.object, msgId);
     }
@@ -153,7 +153,7 @@ function syncStore(db: Database, ws: ServerWebSocket<ConnData>, store: Store<any
             } else {
                 unsyncedObjs = await db.dbConn.queryAll(store.name, {
                     $id: {
-                        ge: lastId
+                        gt: lastId
                     },
                     $userId: ws.data.user,
                     $deleted: 0
