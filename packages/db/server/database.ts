@@ -107,3 +107,13 @@ function zodDefToDbType(def: any): Column {
     }
     throw new Error(`Unexpected Zod type found in store definition: "${def.type}"! Types should be numbers/integers/strings.`);
 }
+
+/**
+ * Removes special columns from a database record
+ * @param record 
+ */
+export function cleanRecord(record: any) {
+    for (const colName of Object.keys(specialColumns)) {
+        delete record[colName];
+    }
+}

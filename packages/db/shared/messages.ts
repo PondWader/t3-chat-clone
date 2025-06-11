@@ -12,6 +12,8 @@ export interface MessageDataMap {
 
 export type Message<T extends MessageType> = {
     type: T;
+    ack?: string;
+    msgId?: string;
     data: MessageDataMap[T];
 };
 

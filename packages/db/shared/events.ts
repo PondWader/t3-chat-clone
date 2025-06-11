@@ -1,5 +1,7 @@
 import { Event, Store } from "../index.js";
 
+export type EventSource = ReturnType<typeof createEventSource>
+
 export function createEventSource() {
     const subscriptions = new Map<Store<any>, ((event: Event<any>) => void)[]>();
 

@@ -1,6 +1,8 @@
 import { Store } from "../index.js";
 
-export class DataStore {
+export type DataStoreObject<T> = T & { $id: string };
+
+export class PersistentStore {
     #db?: IDBDatabase;
     #openQueue: (() => void)[] = [];
 
@@ -75,7 +77,7 @@ export class DataStore {
         })
     }
 
-    insert<T>(store: Store<T>, ...obj: T[]): Promise<void> {
+    insert<T>(store: Store<T>, ...obj: DataStoreObject<T>[]): Promise<void> {
         return this.#acquireLockTransaction(store.name, "readwrite", tx => {
             return new Promise(async (resolve, reject) => {
                 tx.onerror = (e) => {
@@ -88,13 +90,14 @@ export class DataStore {
                 const objectStore = tx.objectStore(store.name);
 
                 for (const o of obj) {
+                    o.$id = "";
                     objectStore.put(o);
                 }
             })
         })
     }
 
-    getAll<T>(store: Store<T>, key: keyof T, value: string): Promise<T[]> {
+    getAll<T>(store: Store<T>, key: keyof DataStoreObject<T>, value: any): Promise<DataStoreObject<T>[]> {
         if (typeof key !== 'string' || !this.#isIndex(store, key)) throw new Error(`Key "${key.toString()}" is not an index in store.`);
 
         return this.#acquireLockTransaction(store.name, "readonly", tx => {
@@ -114,7 +117,7 @@ export class DataStore {
         })
     }
 
-    getLast<T>(store: Store<T>, key: keyof T): Promise<T | null> {
+    getLast<T>(store: Store<T>, key: keyof DataStoreObject<T>): Promise<DataStoreObject<T> | null> {
         if (typeof key !== 'string' || !this.#isIndex(store, key)) throw new Error(`Key "${key.toString()}" is not an index in store.`);
 
         return this.#acquireLockTransaction(store.name, "readonly", tx => {
@@ -153,6 +156,6 @@ export class DataStore {
     }
 
     #isIndex<T>(store: Store<T>, key: string) {
-        return key === 'id' || store.indices.includes(key);
+        return key === '$id' || store.indices.includes(key);
     }
 }

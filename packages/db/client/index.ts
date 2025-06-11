@@ -1,8 +1,9 @@
 import { Event, Store } from "../index.js"
-import { createEventSource } from "../shared/events.js"
+import { createEventSource, EventSource } from "../shared/events.js"
 import { ClientHelloData } from "../shared/messages.js"
 import { Connection } from "./Connection.js"
-import { DataStore } from "./DataStore.js"
+import { MemoryStore } from "./MemoryStore.js"
+import { PersistentStore } from "./PersistentStore.js"
 
 export type Subscription = {
     unsubscribe(): void
@@ -11,7 +12,8 @@ export type Subscription = {
 export type Client = {
     stores: Map<String, Store<any>>,
     conn: Connection,
-    db: DataStore
+    db: PersistentStore,
+    memory: MemoryStore,
     subscribe<T>(store: Store<T>, handler: (event: Event<T>) => void): Subscription
     push<T>(store: Store<T>, object: T): void
     getAll<T>(store: Store<T>, key: keyof T, value: string): Promise<T[]>
@@ -31,19 +33,27 @@ export function createClient(opts: CreateClientOptions): Client {
         conn: new Connection(opts.wsUrl, () => {
             return createClientHello(client);
         }),
-        db: new DataStore(opts.dbName, opts.stores),
+        db: new PersistentStore(opts.dbName, opts.stores),
+        memory: new MemoryStore(),
 
         push(store, object) {
             store.validateClientAction('push', object);
 
-            // TODO: push to memory
+            client.memory.insert(store, object);
+
+            eventSource.publish(store, {
+                action: "push",
+                user: "",
+                id: crypto.randomUUID(),
+                object
+            })
 
             this.conn.send({
                 type: "push",
                 data: {
                     id: "",
-                    store: "",
-                    object: object as any
+                    store: store.name,
+                    object
                 }
             })
         },
@@ -53,19 +63,28 @@ export function createClient(opts: CreateClientOptions): Client {
         subscribe: eventSource.subscribe
     };
 
-    bindConn(client);
+    bindConn(client, eventSource);
 
     return client;
 }
 
-function bindConn(client: Client) {
+function bindConn(client: Client, eventSource: EventSource) {
     client.conn.on('push', data => {
         const store = client.stores.get(data.store);
         if (!store) {
             throw new Error(`Missing store ${data.store}.`);
         }
 
-        client.db.insert(store, data);
+        client.db.insert(store, {
+            $id: data.id,
+            ...data
+        });
+        eventSource.publish(store, {
+            action: "push",
+            user: "",
+            id: data.id,
+            object: data.object
+        })
     })
     client.conn.on('remove', data => {
 
@@ -87,11 +106,15 @@ async function createClientHello(client: Client): Promise<ClientHelloData> {
     const syncStatus: Record<string, string | null> = {};
 
     for (const store of client.stores.values()) {
-        const lastStore = await client.db.getLast(store, "id");
+        const lastStore = await client.db.getLast(store, "$id");
         syncStatus[store.name] = lastStore ? lastStore.id : null;
     }
 
     return {
         syncStatus
     }
+}
+
+function resetMemory() {
+
 }

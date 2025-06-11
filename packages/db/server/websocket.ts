@@ -2,7 +2,7 @@ import { ServerWebSocket, WebSocketHandler } from "bun";
 import { Database } from "./index.js";
 import { clientHelloData, pushData, PushData, RemoveData, removeData, type Message, type MessageType } from "../shared/messages.js";
 import { Store } from "../index.js";
-import { specialColumns } from "./database.js";
+import { cleanRecord, specialColumns } from "./database.js";
 
 type ConnData = {
     synced: boolean;
@@ -21,6 +21,7 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
             if (e.action === 'push' || e.action === 'partial') {
                 msg = {
                     type: e.action,
+                    ack: e.msgId,
                     data: {
                         store: store.name,
                         object: e.object,
@@ -30,6 +31,7 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
             } else if (e.action === 'remove') {
                 msg = {
                     type: 'remove',
+                    ack: e.msgId,
                     data: {
                         store: store.name,
                         id: e.id
@@ -45,20 +47,20 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
         })
     }
 
-    function handlePush(user: string, data: PushData) {
+    function handlePush(user: string, data: PushData, msgId?: string) {
         const store = db.stores.get(data.store);
         if (store === undefined) return;
         if (!store.validateClientActionSafe("push", data)) return;
 
-        db.push(store, user, data.object);
+        db.push(store, user, data.object, msgId);
     }
 
-    function handleRemove(user: string, data: RemoveData) {
+    function handleRemove(user: string, data: RemoveData, msgId?: string) {
         const store = db.stores.get(data.store);
         if (store === undefined) return;
         if (!store.validateClientActionSafe("push", data)) return;
 
-        db.remove(store, user, data.id);
+        db.remove(store, user, data.id, msgId);
     }
 
     return {
@@ -95,11 +97,11 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
                 if (msg.type === 'push') {
                     const result = pushData.safeParse(msg.data);
                     if (!result.success) return;
-                    handlePush(ws.data.user, result.data);
+                    handlePush(ws.data.user, result.data, msg.msgId);
                 } else if (msg.type === 'remove') {
                     const result = removeData.safeParse(msg.data);
                     if (!result.success) return;
-                    handleRemove(ws.data.user, result.data);
+                    handleRemove(ws.data.user, result.data, msg.msgId);
                 }
             }
         },
@@ -164,9 +166,7 @@ function syncStore(db: Database, ws: ServerWebSocket<ConnData>, store: Store<any
         for (const obj of unsyncedObjs) {
             const id = obj.$id;
 
-            for (const colName of Object.keys(specialColumns)) {
-                delete obj[colName];
-            }
+            cleanRecord(obj);
 
             const msg: Message<"push"> = {
                 type: 'push',

@@ -1,6 +1,6 @@
 import { WebSocketHandler } from "bun";
 import { Action, Event, Store } from "../index.js";
-import { connect, createMetaTables, createStoreTable, DatabaseDriverConn } from "./database.js";
+import { cleanRecord, connect, createMetaTables, createStoreTable, DatabaseDriverConn } from "./database.js";
 import { createWsBinding } from "./websocket.js";
 import { UserQueue } from "./UserQueue.js";
 import { createEventSource } from "../shared/events.js";
@@ -17,8 +17,8 @@ export type Database = {
     bindWebSocket(): WebSocketHandler<{ user: string; }>
     getSafeTableName(tableName: string): string
 
-    push<T>(store: Store<T>, user: string, object: T): void
-    remove(store: Store<any>, user: string, objectId: string): void
+    push<T>(store: Store<T>, user: string, object: T, msgId?: string): void
+    remove(store: Store<any>, user: string, objectId: string, msgId?: string): void
     getAll<T>(store: Store<T>, user: string, key: keyof T, value: string): Promise<T[]>
 }
 
@@ -49,7 +49,7 @@ export async function createDatabase(opts: CreateDatabaseOptions): Promise<Datab
         getSafeTableName(tableName) {
             return '$' + tableName;
         },
-        push(store, user, object) {
+        push(store, user, object, msgId) {
             if (!this.stores.has(store.name)) throw new Error(`Store "${store.name}" is not registered in the database.`);
             store.validate(object);
 
@@ -67,15 +67,21 @@ export async function createDatabase(opts: CreateDatabaseOptions): Promise<Datab
                     action: 'push',
                     user,
                     id,
-                    object
+                    object,
+                    msgId
                 })
             })
         },
-        remove(store, user, objectId) {
+        remove(store, user, objectId, msgId) {
             if (!this.stores.has(store.name)) throw new Error(`Store "${store.name}" is not registered in the database.`);
 
             return userQueue.syncUserAction(user, async () => {
                 await dbConn.transaction(async () => {
+                    const object = await dbConn.query(store.name, {
+                        $id: objectId
+                    })
+                    if (object === null) return;
+
                     await dbConn.update(store.name, {
                         $id: objectId,
                         $userId: user
@@ -87,6 +93,15 @@ export async function createDatabase(opts: CreateDatabaseOptions): Promise<Datab
                         store: store.name,
                         userId: user,
                         objectId
+                    })
+                    cleanRecord(object);
+
+                    eventSource.publish(store, {
+                        action: 'remove',
+                        id: objectId,
+                        user,
+                        object,
+                        msgId
                     })
                 });
             })

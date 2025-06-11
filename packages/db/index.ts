@@ -5,10 +5,11 @@ import { MessageType } from "./shared/messages";
 export type Action = Exclude<Exclude<MessageType, "client_hello">, "clear">;
 
 export type Event<T> = {
-    action: Action
-    user: string
-    id: string
-    object: T
+    action: Action;
+    user: string;
+    id: string;
+    object: T;
+    msgId?: string;
 }
 
 export type Store<T> = {
