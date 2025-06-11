@@ -9,7 +9,10 @@ export class PersistentStore {
     #lockQueue: (() => void)[] = [];
     #locked = false;
 
-    constructor(dbName: string, stores: Store<any>[]) {
+    #onError?: (err: any) => void
+
+    constructor(dbName: string, stores: Store<any>[], onError?: (err: any) => void) {
+        this.#onError = onError;
         const request = window.indexedDB.open(dbName, 1);
         request.onerror = (event) => {
             console.error(`Failed to open IndexedDB database: ${(event.target as any).error?.message}`);
@@ -37,6 +40,7 @@ export class PersistentStore {
             for (const i of store.indices) {
                 objectStore.createIndex(i, i, { unique: false });
             }
+            objectStore.createIndex('$msgId', '$msgId')
         }
     }
 
@@ -65,6 +69,9 @@ export class PersistentStore {
                 const transaction = await this.#acquireTransaction(storeNames, mode, options);
                 resolve(await cb(transaction));
             } catch (err) {
+                if (this.#onError) {
+                    this.#onError(err);
+                }
                 reject(err);
             }
 
@@ -90,7 +97,6 @@ export class PersistentStore {
                 const objectStore = tx.objectStore(store.name);
 
                 for (const o of obj) {
-                    o.$id = "";
                     objectStore.put(o);
                 }
             })
@@ -163,6 +169,14 @@ export class PersistentStore {
                 }
             })
         })
+    }
+
+    close() {
+        if (this.#db) {
+            this.#db.close()
+        } else {
+            this.#openQueue.push(() => this.close());
+        }
     }
 
     #isIndex<T>(store: Store<T>, key: string) {

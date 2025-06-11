@@ -34,7 +34,12 @@ export function createClient(opts: CreateClientOptions): Client {
         conn: new Connection(opts.wsUrl, () => {
             return createClientHello(client);
         }, opts.timeoutMs ?? 10_000),
-        db: new PersistentStore(opts.dbName, opts.stores),
+        db: new PersistentStore(opts.dbName, opts.stores, err => {
+            console.error('IndexedDB operation failed: ' + err.toString());
+            alert('An IndexedDB operation failed (check browser console for more information). Reloading page...');
+            client.db.close();
+            window.location.reload();
+        }),
         memory: new MemoryStore(),
 
         push(this: Client, store, object) {
@@ -84,11 +89,7 @@ function bindConn(client: Client, eventSource: EventSource) {
 
         client.db.insert(store, {
             $id: data.id,
-            ...data
-        }).catch(err => {
-            console.error('IndexedDB operation fialed: ' + err.toString());
-            alert('An IndexedDB operation failed (check console for more information). Reloading page...');
-            window.location.reload();
+            ...data.object
         });
 
         if (typeof ack === 'string') {
@@ -132,7 +133,7 @@ async function createClientHello(client: Client): Promise<ClientHelloData> {
 
     for (const store of client.stores.values()) {
         const lastStore = await client.db.getLast(store, "$id");
-        syncStatus[store.name] = lastStore ? lastStore.id : null;
+        syncStatus[store.name] = lastStore ? lastStore.$id : null;
     }
 
     return {

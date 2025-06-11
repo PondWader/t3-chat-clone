@@ -13,6 +13,7 @@ export class Connection extends TypedEmitter<MessageEvents> {
     #writeQueue: { msg: string, resolve: (v: any) => void }[] = [];
     #timeoutMs: number;
     #pendingMsgs = new Map<string, () => void>();
+    #destroyed = false;
 
     constructor(wsUrl: string, clientHelloHandler: () => Promise<ClientHelloData>, timeoutMs: number) {
         super();
@@ -20,6 +21,10 @@ export class Connection extends TypedEmitter<MessageEvents> {
         this.#clientHelloHandler = clientHelloHandler;
         this.#timeoutMs = timeoutMs;
         this.#connect();
+
+        window.addEventListener('beforeunload', () => {
+            this.destroy();
+        })
     }
 
     #connect() {
@@ -38,6 +43,7 @@ export class Connection extends TypedEmitter<MessageEvents> {
         }
 
         this.#ws.onclose = () => {
+            if (this.#destroyed) return;
             console.warn('WebSocket connection lost. Reconnecting...');
             this.#connected = false;
             this.#connect();
@@ -99,5 +105,10 @@ export class Connection extends TypedEmitter<MessageEvents> {
                 }, this.#timeoutMs);
             })
         }
+    }
+
+    destroy() {
+        this.#destroyed = true;
+        this.#ws?.close();
     }
 }
