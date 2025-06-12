@@ -2,7 +2,12 @@ import type { ZodObject } from "zod/v4"
 import z from "zod/v4";
 import { MessageType } from "./shared/messages";
 
-export type Action = Exclude<Exclude<MessageType, "client_hello">, "clear">;
+export type Action = Exclude<MessageType, "client_hello">;
+
+export type ObjectInstance<T> = {
+    id: string,
+    object: T
+}
 
 export type Event<T> = {
     action: Action;
@@ -10,6 +15,7 @@ export type Event<T> = {
     id: string;
     object: T;
     msgId?: string;
+    ack?: string;
 }
 
 export type Store<T> = {

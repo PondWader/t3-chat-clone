@@ -5,6 +5,8 @@ type MessageEvents = {
     [K in keyof MessageDataMap]: (data: MessageDataMap[K], ack?: string) => void;
 };
 
+export const SyncTimeoutError = new Error('Sync timeout.');
+
 export class Connection extends TypedEmitter<MessageEvents> {
     #wsUrl: string;
     #ws?: WebSocket;
@@ -93,7 +95,7 @@ export class Connection extends TypedEmitter<MessageEvents> {
                 }
 
                 setTimeout(() => {
-                    reject(new Error('Sync timeout.'));
+                    reject(SyncTimeoutError);
                 }, this.#timeoutMs);
             })
         } else {
@@ -101,7 +103,7 @@ export class Connection extends TypedEmitter<MessageEvents> {
                 this.#writeQueue.push({ msg: json, resolve });
 
                 setTimeout(() => {
-                    reject(new Error('Sync timeout.'));
+                    reject(SyncTimeoutError);
                 }, this.#timeoutMs);
             })
         }

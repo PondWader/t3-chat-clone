@@ -103,6 +103,52 @@ export class PersistentStore {
         })
     }
 
+    delete<T>(store: Store<T>, id: string) {
+        return this.#acquireLockTransaction(store.name, "readwrite", tx => {
+            return new Promise<void>(async (resolve, reject) => {
+                const objectStore = tx.objectStore(store.name);
+
+                const request = objectStore.delete(id);
+
+                request.onsuccess = () => {
+                    resolve();
+                }
+                request.onerror = (e) => {
+                    const err = (e.target as any).error;
+                    if (err instanceof DOMException && err.name === "NotFoundError") resolve();
+                    else reject((e.target as any).error)
+                }
+            })
+        })
+    }
+
+    get<T>(store: Store<T>, key: keyof PersistentStoreObject<T>, value: any): Promise<PersistentStoreObject<T> | null> {
+        if (typeof key !== 'string' || !this.#isIndex(store, key)) throw new Error(`Key "${key.toString()}" is not an index in store.`);
+
+        return this.#acquireLockTransaction(store.name, "readonly", tx => {
+            return new Promise(async (resolve, reject) => {
+                const objectStore = tx.objectStore(store.name);
+
+                let request;
+                if (key === '$id') {
+                    request = objectStore.get(value);
+                } else {
+                    const index = objectStore.index(key);
+                    request = index.get(value);
+                }
+
+                request.onsuccess = () => {
+                    resolve(request.result);
+                }
+                request.onerror = (e) => {
+                    const err = (e.target as any).error;
+                    if (err instanceof DOMException && err.name === "NotFoundError") resolve(null);
+                    else reject((e.target as any).error)
+                }
+            })
+        })
+    }
+
     getAll<T>(store: Store<T>, key: keyof PersistentStoreObject<T>, value: any): Promise<PersistentStoreObject<T>[]> {
         if (typeof key !== 'string' || !this.#isIndex(store, key)) throw new Error(`Key "${key.toString()}" is not an index in store.`);
 
