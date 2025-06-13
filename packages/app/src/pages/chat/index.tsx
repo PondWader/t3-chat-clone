@@ -21,7 +21,7 @@ const sampleQuestions = [
 ];
 
 export function Chat() {
-	return <div className={`flex h-screen font-sans bg-gray-50 dark:bg-gray-900`}>
+	return <div className={`overflow-y-hidden flex h-dvh font-sans bg-gray-50 dark:bg-gray-900`}>
 		<Sidebar />
 		<ChatInterface />
 	</div>
@@ -91,15 +91,15 @@ function ChatInterface() {
 	return (
 		<div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-800`}>
 			{/* Main Content Area */}
-			<div className="flex-1 flex items-center justify-center p-8">
+			<div className="flex-1 flex items-center justify-center p-4 lg:p-8">
 				<div className="max-w-2xl w-full text-center">
 					{/* Welcome Message */}
-					<h1 className={`text-3xl font-bold mb-8 text-gray-900 dark:text-white`}>
+					<h1 className={`text-2xl lg:text-3xl font-bold mb-6 lg:mb-8 text-gray-900 dark:text-white`}>
 						How can I help you, Pond?
 					</h1>
 
 					{/* Action Buttons */}
-					<div className="flex justify-center gap-4 mb-12">
+					<div className="flex flex-wrap justify-center gap-2 lg:gap-4 mb-8 lg:mb-12">
 						{actionButtons.map((button) => {
 							const IconComponent = button.icon;
 							return (
@@ -123,7 +123,7 @@ function ChatInterface() {
 							<button
 								key={index}
 								onClick={() => message.value = question}
-								className={`group relative block w-full text-left p-4 rounded-lg 
+								className={`group relative block w-full text-left p-3 lg:p-4 rounded-lg 
 									dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 dark:hover:text-white dark:border-transparent
 									bg-white hover:bg-gray-100 text-gray-700 hover:text-gray-900 shadow-sm border border-gray-200
 									`}
@@ -210,6 +210,6 @@ function ChatControl(props: { name: string, icon: FunctionalComponent<{ size: nu
 		dark:bg-transparent dark:border-gray-700 dark:border-2 dark:hover:bg-gray-800 dark:text-gray-300 dark:hover:text-white
 	`}>
 		<props.icon size={12} />
-		{props.name}
+		<span class="hidden lg:block">{props.name}</span>
 	</button>
 }

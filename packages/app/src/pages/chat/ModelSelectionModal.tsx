@@ -257,9 +257,9 @@ export function ModelSelectionModal({
                             type="text"
                             placeholder="Search models..."
                             className={`w-full pl-10 pr-4 py-3 rounded-lg text-sm
-                              bg-gray-50 text-gray-900 placeholder-gray-500 focus: 
-                                dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus: border-gray-600
-                                border focus: outline-none focus: ring-2 focus: ring-purple-500 / 20
+                              bg-gray-50 text-gray-900 placeholder-gray-500 
+                                dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-gray-600
+                                border focus:outline-none 
                             `}
                         />
                     </div>

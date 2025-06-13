@@ -1,6 +1,6 @@
-import { Plus, Search, MessageSquare, Settings, Moon, Sun } from 'lucide-preact';
+import { Plus, Search, MessageSquare, Settings, Moon, Sun, X, PanelLeftOpen } from 'lucide-preact';
 import { currentTheme, toggleTheme } from '../../theme';
-import { useComputed } from '@preact/signals';
+import { useComputed, useSignal } from '@preact/signals';
 
 type ChatSession = {
     id: string;
@@ -22,102 +22,130 @@ const chatSessions: ChatSession[] = [
 ];
 
 export default function Sidebar() {
-    return (
-        <div className={`w-64 h-screen flex flex-col border-r 
+    const sidebarToggle = useSignal(false);
+    const wrapperClass = useComputed(() => sidebarToggle.value ? '' : 'hidden lg:flex');
+
+    return <>
+        <div class="lg:hidden fixed z-10 cursor-pointer" onClick={() => sidebarToggle.value = true}>
+            <div class="absolute w-16 h-12 bg-purple-400 dark:bg-slate-700 border-none">
+                <div class="h-full flex items-center justify-center text-white font-bold">
+                    <PanelLeftOpen />
+                </div>
+                <div class="absolute left-16 right-0 bottom-0 w-0 h-0 border-l-64 border-b-64 border-transparent border-l-purple-400 dark:border-l-slate-700"></div>
+            </div>
+        </div>
+
+        <span class={wrapperClass}>
+            {/*Small screen overlay*/}
+            <div class="lg:hidden fixed inset-0 bg-black opacity-50 z-20" onClick={() => sidebarToggle.value = false} />
+
+            <div className={`flex fixed lg:relative z-30 w-64 h-dvh flex-col border-r 
             bg-white border-gray-200
             dark:bg-gradient-to-b dark:from-gray-900 dark:to-gray-800 dark:border-gray-700
         `}>
-            {/* Header */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-4">
-                    <h1 className={`text-lg font-semibold text-gray-900 dark:text-white`}>
-                        T3 Chat Clone
-                    </h1>
-                    <ThemeToggle />
-                </div>
+                {/* Header */}
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center justify-between mb-4">
+                        <h1 className={`text-lg font-semibold text-gray-900 dark:text-white`}>
+                            T3 Chat Clone
+                        </h1>
+                        <div className="flex items-center gap-2">
+                            <ThemeToggle />
+                            <button
+                                onClick={() => sidebarToggle.value = false}
+                                className={`lg:hidden p-2 rounded-lg cursor-pointer
+                            dark:hover:bg-gray-800 dark:text-gray-300 dark:hover:text-white
+                            hover:bg-gray-100 text-gray-600 hover:text-gray-900
+                        `}
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+                    </div>
 
-                <button className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg 
+                    <a href="/" className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg 
                     dark:bg-purple-600 dark:hover:bg-purple-800 dark:text-white
                     bg-purple-500 hover:bg-purple-600 text-white
                 `}>
-                    <Plus size={16} />
-                    <span className="text-sm font-medium">New Chat</span>
-                </button>
-            </div>
+                        <Plus size={16} />
+                        <span className="text-sm font-medium">New Chat</span>
+                    </a>
+                </div>
 
-            {/* Search */}
-            <div className="p-4">
-                <div className="relative">
-                    <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400`} />
-                    <input
-                        type="text"
-                        placeholder="Search your threads..."
-                        className={`w-full pl-10 pr-4 py-2 rounded-lg text-sm 
+                {/* Search */}
+                <div className="p-4">
+                    <div className="relative">
+                        <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400`} />
+                        <input
+                            type="text"
+                            placeholder="Search your threads..."
+                            className={`w-full pl-10 pr-4 py-2 rounded-lg text-sm 
                             bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500 focus:border-gray-300
                             dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-gray-600
                             border focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
-                    />
+                        />
+                    </div>
                 </div>
-            </div>
 
-            {/* Chat Sessions */}
-            <div className="flex-1 overflow-y-auto">
-                <div className="px-4 pb-4">
-                    {['Today', 'Yesterday', 'Last 7 Days', 'Last 30 Days'].map((category) => {
-                        const sessionsInCategory = chatSessions.filter(session => session.category === category);
-                        if (sessionsInCategory.length === 0) return null;
+                {/* Chat Sessions */}
+                <div className="flex-1 overflow-y-auto">
+                    <div className="px-4 pb-4">
+                        {['Today', 'Yesterday', 'Last 7 Days', 'Last 30 Days'].map((category) => {
+                            const sessionsInCategory = chatSessions.filter(session => session.category === category);
+                            if (sessionsInCategory.length === 0) return null;
 
-                        return (
-                            <div key={category} className="mb-6">
-                                <h3 className={`text-xs font-medium mb-2 px-2 text-gray-500 dark:text-gray-400`}>
-                                    {category}
-                                </h3>
-                                <div className="space-y-1">
-                                    {sessionsInCategory.map((session) => (
-                                        <button
-                                            key={session.id}
-                                            className={`w-full text-left p-2 rounded-lg group 
+                            return (
+                                <div key={category} className="mb-6">
+                                    <h3 className={`text-xs font-medium mb-2 px-2 text-gray-500 dark:text-gray-400`}>
+                                        {category}
+                                    </h3>
+                                    <div className="space-y-1">
+                                        {sessionsInCategory.map((session) => (
+                                            <button
+                                                key={session.id}
+                                                className={`w-full text-left p-2 rounded-lg group 
                                                 hover:bg-gray-100 text-gray-700 hover:text-gray-900
                                                 dark:hover:bg-gray-800 dark:text-gray-300 dark:hover:text-white
                                             `}
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                <MessageSquare size={14} className="flex-shrink-0" />
-                                                <span className="text-sm truncate">{session.title}</span>
-                                            </div>
-                                        </button>
-                                    ))}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <MessageSquare size={14} className="flex-shrink-0" />
+                                                    <span className="text-sm truncate">{session.title}</span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
                 </div>
-            </div>
 
-            {/* User Profile */}
-            <div className={`p-4 border-t border-gray-200 dark:border-gray-700`}>
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">P</span>
-                    </div>
-                    <div className="flex-1">
-                        <p className={`text-sm font-medium text-gray-900 dark:text-white`}>
-                            Pond Wader
-                        </p>
-                        <p className={`text-xs text-gray-500 dark:text-gray-400`}>
-                            Free
-                        </p>
-                    </div>
-                    <button className={`p-1 rounded-md
+                {/* User Profile */}
+                <div className={`p-4 border-t border-gray-200 dark:border-gray-700`}>
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm font-medium">P</span>
+                        </div>
+                        <div className="flex-1">
+                            <p className={`text-sm font-medium text-gray-900 dark:text-white`}>
+                                Pond Wader
+                            </p>
+                            <p className={`text-xs text-gray-500 dark:text-gray-400`}>
+                                Free
+                            </p>
+                        </div>
+                        <button className={`p-1 rounded-md
                         hover:bg-gray-100 text-gray-500 hover:text-gray-700
                         dark:hover:bg-gray-800 dark:text-gray-400 dark:hover:text-white
                     `}>
-                        <Settings size={16} />
-                    </button>
+                            <Settings size={16} />
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-    );
+        </span>
+    </>
 };
 
 function ThemeToggle() {
