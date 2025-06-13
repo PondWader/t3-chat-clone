@@ -3,7 +3,7 @@ import { account, chatMessage } from "@t3-chat-clone/stores";
 import { ComponentChild, createContext } from "preact";
 import { useContext, useEffect } from "preact/hooks";
 import { useSignal } from "@preact/signals";
-import { storeObject } from "@t3-chat-clone/db";
+import type { storeObject, ObjectInstance } from "@t3-chat-clone/db";
 
 const DBContext = createContext<Client | null>(null);
 
@@ -13,7 +13,7 @@ export function useDB(): Client {
 
 export function useChat(chatId: string) {
     const db = useDB();
-    const signal = useSignal<storeObject<typeof chatMessage>[]>([]);
+    const signal = useSignal<ObjectInstance<storeObject<typeof chatMessage>>[]>([]);
 
     useEffect(() => {
         db.getAll(chatMessage, 'chatId', chatId)

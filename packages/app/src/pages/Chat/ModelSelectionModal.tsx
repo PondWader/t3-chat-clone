@@ -178,7 +178,7 @@ function ModelCard(props: {
             )}
 
             <div className="flex items-center gap-3 mb-3">
-                <props.model.icon height={28} width={28} />
+                <props.model.icon height={22} width={22} />
                 <div>
                     <div className={`font-semibold text-sm text-gray-900 dark:text-white`}>
                         {props.model.name}
@@ -235,7 +235,7 @@ export function ModelSelectionModal({
             <div className={`relative w-full max-w-4xl max-h-[90vh] m-4 rounded-xl shadow-2xl overflow-hidden bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700`}>
                 {/* Header */}
                 <div className={`flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700`}>
-                    <h2 className={`text-xl font-semibold 'text-gray-900 dark:text-white`}>
+                    <h2 className={`text-xl font-semibold text-gray-900 dark:text-white`}>
                         Select Model
                     </h2>
                     <button
