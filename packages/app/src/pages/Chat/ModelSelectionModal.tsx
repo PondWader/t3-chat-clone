@@ -2,13 +2,14 @@ import { X, Search, Star, Eye, Globe, FileText, Zap, AlertTriangle } from 'lucid
 import GeminiIcon from '../../icons/Gemini';
 import GptIcon from '../../icons/GPT';
 import { FunctionalComponent } from 'preact';
+import { Signal, useComputed } from '@preact/signals';
 
 
 type ModelCard = {
     id: string;
     name: string;
     version: string;
-    icon: FunctionalComponent;
+    icon: FunctionalComponent<{ height: number, width: number }>;
     isFavorite?: boolean;
     capabilities: {
         vision?: boolean;
@@ -177,7 +178,7 @@ function ModelCard(props: {
             )}
 
             <div className="flex items-center gap-3 mb-3">
-                <props.model.icon />
+                <props.model.icon height={28} width={28} />
                 <div>
                     <div className={`font-semibold text-sm text-gray-900 dark:text-white`}>
                         {props.model.name}
@@ -211,19 +212,19 @@ function ModelCard(props: {
 
 export function ModelSelectionModal({
     isOpen,
-    onClose,
     selectedModel,
+    onClose,
     onSelectModel
 }: {
-    isOpen: boolean;
+    isOpen: Signal<boolean>;
+    selectedModel: Signal<string>;
     onClose: () => void;
-    selectedModel: string;
     onSelectModel: (model: string) => void;
 }) {
-    if (!isOpen) return null;
+    const wrapperClassName = useComputed(() => `fixed inset-0 z-50 flex items-center justify-center ${isOpen.value ? '' : 'hidden'}`);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className={wrapperClassName}>
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -231,17 +232,15 @@ export function ModelSelectionModal({
             />
 
             {/* Modal */}
-            <div className={`relative w-full max-w-4xl max-h-[90vh] m-4 rounded-xl shadow-2xl overflow-hidden bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 
-                }`}>
+            <div className={`relative w-full max-w-4xl max-h-[90vh] m-4 rounded-xl shadow-2xl overflow-hidden bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700`}>
                 {/* Header */}
                 <div className={`flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700`}>
-                    <h2 className={`text-xl font-semibold 'text-gray-900 dark:text-white
-                        }`}>
+                    <h2 className={`text-xl font-semibold 'text-gray-900 dark:text-white`}>
                         Select Model
                     </h2>
                     <button
                         onClick={onClose}
-                        className={`p-2 rounded-lg transition-colors
+                        className={`p-2 rounded-lg transition-colors cursor-pointer
                             dark:hover:bg-gray-800 dark:text-gray-400 dark:hover:text-white
                             hover:bg-gray-100 text-gray-500 hover:text-gray-700
                         `}
@@ -281,7 +280,7 @@ export function ModelSelectionModal({
                                 <ModelCard
                                     key={model.id}
                                     model={model}
-                                    isSelected={selectedModel === model.id}
+                                    isSelected={selectedModel.value === model.id}
                                     onClick={() => onSelectModel(model.id)}
                                 />
                             ))}
@@ -290,8 +289,7 @@ export function ModelSelectionModal({
 
                     {/* Others Section */}
                     <div>
-                        <h3 className={`text-sm font-medium mb-4 text-gray-700 dark:text-gray-300
-                            }`}>
+                        <h3 className={`text-sm font-medium mb-4 text-gray-700 dark:text-gray-300`}>
                             Others
                         </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
@@ -299,7 +297,7 @@ export function ModelSelectionModal({
                                 <ModelCard
                                     key={model.id}
                                     model={model}
-                                    isSelected={selectedModel === model.id}
+                                    isSelected={selectedModel.value === model.id}
                                     onClick={() => onSelectModel(model.id)}
                                 />
                             ))}

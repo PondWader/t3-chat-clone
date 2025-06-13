@@ -81,14 +81,12 @@ export function Home() {
 	};
 
 	return (
-		<div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-800
-			}`}>
+		<div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-800`}>
 			{/* Main Content Area */}
 			<div className="flex-1 flex items-center justify-center p-8">
 				<div className="max-w-2xl w-full text-center">
 					{/* Welcome Message */}
-					<h1 className={`text-3xl font-bold mb-8 text-gray-900 dark:text-white
-						}`}>
+					<h1 className={`text-3xl font-bold mb-8 text-gray-900 dark:text-white`}>
 						How can I help you, Pond?
 					</h1>
 
@@ -176,7 +174,7 @@ export function Home() {
 									dark:bg-gradient-to-r dark:from-purple-900 dark:to-purple-600 dark:border-purple-800 dark:border-2 dark:hover:from-purple-800 dark:hover:to-purple-500 dark:text-gray-300 dark:hover:text-white
 								`}
 							>
-								<GeminiIcon />
+								<GeminiIcon height={16} width={16} />
 								<span className="ml-sm">{getModelDisplayName(selectedModel.value)}</span>
 							</button>
 							<ChatControl name="Search" icon={Search} />
@@ -189,9 +187,9 @@ export function Home() {
 
 			{/* Model Selection Modal */}
 			<ModelSelectionModal
-				isOpen={isModelModalOpen.value}
+				isOpen={isModelModalOpen}
+				selectedModel={selectedModel}
 				onClose={() => { isModelModalOpen.value = false }}
-				selectedModel={selectedModel.value}
 				onSelectModel={handleModelSelect}
 			/>
 		</div >
