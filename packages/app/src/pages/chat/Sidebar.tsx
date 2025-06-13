@@ -31,7 +31,7 @@ export default function Sidebar() {
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-4">
                     <h1 className={`text-lg font-semibold text-gray-900 dark:text-white`}>
-                        TS Chat
+                        T3 Chat Clone
                     </h1>
                     <ThemeToggle />
                 </div>
@@ -101,7 +101,7 @@ export default function Sidebar() {
                         <span className="text-white text-sm font-medium">P</span>
                     </div>
                     <div className="flex-1">
-                        <p className={`text-sm font-medium 'text-gray-900 dark:text-white`}>
+                        <p className={`text-sm font-medium text-gray-900 dark:text-white`}>
                             Pond Wader
                         </p>
                         <p className={`text-xs text-gray-500 dark:text-gray-400`}>

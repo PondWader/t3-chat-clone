@@ -4,6 +4,7 @@ import GeminiIcon from "../../icons/Gemini.tsx";
 import { ModelSelectionModal } from './ModelSelectionModal.tsx';
 import { useSignal } from '@preact/signals';
 import { useRef } from 'preact/hooks';
+import Sidebar from './Sidebar.tsx';
 
 const actionButtons = [
 	{ icon: Sparkles, label: 'Create', color: 'text-purple-600' },
@@ -19,7 +20,14 @@ const sampleQuestions = [
 	"What is the meaning of life?",
 ];
 
-export function Home() {
+export function Chat() {
+	return <div className={`flex h-screen font-sans bg-gray-50 dark:bg-gray-900`}>
+		<Sidebar />
+		<ChatInterface />
+	</div>
+};
+
+function ChatInterface() {
 	const message = useSignal('');
 	const isModelModalOpen = useSignal(false);
 	const selectedModel = useSignal('gemini-2.5-flash');
@@ -99,7 +107,7 @@ export function Home() {
 									key={button.label}
 									className={`flex items-center gap-2 px-4 py-2 rounded-lg 
 										bg-white hover:bg-gray-100 text-gray-900 shadow-sm border border-gray-200
-										dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white dark:border-none
+										dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white dark:border-transparent
 										`}
 								>
 									<IconComponent size={16} className={button.color} />
@@ -116,7 +124,7 @@ export function Home() {
 								key={index}
 								onClick={() => message.value = question}
 								className={`group relative block w-full text-left p-4 rounded-lg 
-									dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 dark:hover:text-white dark:border-none
+									dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 dark:hover:text-white dark:border-transparent
 									bg-white hover:bg-gray-100 text-gray-700 hover:text-gray-900 shadow-sm border border-gray-200
 									`}
 							>
@@ -194,7 +202,7 @@ export function Home() {
 			/>
 		</div >
 	);
-};
+}
 
 function ChatControl(props: { name: string, icon: FunctionalComponent<{ size: number | string }> }) {
 	return <button className={`flex items-center p-2 rounded-full gap-1 cursor-pointer
