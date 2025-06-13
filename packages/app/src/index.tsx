@@ -1,8 +1,7 @@
 import { render } from 'preact';
 import { LocationProvider, Router, Route } from 'preact-iso';
 
-import { Header } from './components/Header.jsx';
-import { Home } from './pages/Home/index.jsx';
+import { Home } from './pages/Chat/index.tsx';
 import { NotFound } from './pages/_404.jsx';
 import './style.css';
 import { DBProvider } from './db.js';
@@ -11,12 +10,14 @@ export function App() {
 	return (
 		<DBProvider>
 			<LocationProvider>
-				<Header />
 				<main>
-					<Router>
-						<Route path="/" component={Home} />
-						<Route default component={NotFound} />
-					</Router>
+					<div className={`flex h-screen font-sans bg-gray-50 dark:bg-gray-900`}>
+						<Router>
+							<Route path="/" component={Home} />
+							<Route path="/chat/:id" component={Home} />
+							<Route default component={NotFound} />
+						</Router>
+					</div>
 				</main>
 			</LocationProvider>
 		</DBProvider>
