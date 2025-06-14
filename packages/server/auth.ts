@@ -1,6 +1,7 @@
 import { Database } from "@t3-chat-clone/db/server";
 import nJwt from "njwt";
 import crypto from "crypto";
+import { z, ZodObject } from "zod/v4";
 
 const cookieParams = {
     secure: true,
@@ -17,7 +18,8 @@ type AuthOutput = {
 
 export type AuthHandler = {
     auth(req: Bun.BunRequest): AuthOutput
-    setGuest(req: Bun.BunRequest, uuid: string): Bun.CookieMap
+    setGuest(uuid: string): Bun.CookieMap
+    createUserResponse(provider: string, id: string, email: string): Promise<Response>
 }
 
 export async function createAuthHandler(db: Database): Promise<AuthHandler> {
@@ -79,10 +81,13 @@ export async function createAuthHandler(db: Database): Promise<AuthHandler> {
                 guest
             }
         },
-        setGuest(req: Bun.BunRequest, uuid: string) {
+        setGuest(uuid: string) {
             const cookies = new Bun.CookieMap();
             setGuest(signingKey, cookies, uuid);
             return cookies;
+        },
+        async createUserResponse(provider: string, id: string, email: string) {
+            return new Response();
         }
     }
 }
@@ -147,4 +152,13 @@ async function getSigningKey(db: Database) {
     }
 
     return signingKey;
+}
+
+export function createAuthProvider<T extends ZodObject, P extends string>(opts: {
+    config: T,
+    callbackParams: P[],
+    getUrl: (config: z.infer<T>, state: string) => string,
+    authenticate: (handler: AuthHandler, config: z.infer<T>, params: Record<P, string>) => Promise<Response>
+}) {
+
 }

@@ -37,7 +37,7 @@ export async function createLinkHandler(authHandler: AuthHandler, db: Database) 
                 message: 'Code not found.'
             }, { status: 404 });
 
-            const newCookies = authHandler.setGuest(req, link.userId);
+            const newCookies = authHandler.setGuest(link.userId);
 
             const headers = new Headers();
             for (const cookie of newCookies.toSetCookieHeaders()) {
