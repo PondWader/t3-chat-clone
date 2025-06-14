@@ -11,10 +11,16 @@ const cookieParams = {
 
 type AuthOutput = {
     uuid: string;
+    guest: boolean;
     newCookies: Bun.CookieMap;
 }
 
-export async function createAuthHandler(db: Database) {
+export type AuthHandler = {
+    auth(req: Bun.BunRequest): AuthOutput
+    setGuest(req: Bun.BunRequest, uuid: string): Bun.CookieMap
+}
+
+export async function createAuthHandler(db: Database): Promise<AuthHandler> {
     const tableName = db.getSafeTableName('authentication');
     const conn = db.dbConn;
 
@@ -42,6 +48,7 @@ export async function createAuthHandler(db: Database) {
             const newCookies = new Bun.CookieMap();
 
             let uuid: string;
+            let guest = false;
             if (accessToken !== null) {
                 if (accessToken.startsWith('guest_')) {
                     const jwt = accessToken.slice(6)
@@ -53,6 +60,7 @@ export async function createAuthHandler(db: Database) {
                     }
 
                     uuid = verifiedUuid;
+                    guest = true;
                 } else {
                     // TODO: 
                     uuid = "";
@@ -62,32 +70,41 @@ export async function createAuthHandler(db: Database) {
                 uuid = "";
             } else {
                 uuid = createGuest(signingKey, newCookies);
+                guest = true;
             }
 
             return {
                 uuid,
-                newCookies
+                newCookies,
+                guest
             }
+        },
+        setGuest(req: Bun.BunRequest, uuid: string) {
+            const cookies = new Bun.CookieMap();
+            setGuest(signingKey, cookies, uuid);
+            return cookies;
         }
     }
 }
 
 function createGuest(signingKey: Buffer, cookies: Bun.CookieMap) {
     const uuid = Bun.randomUUIDv7();
+    setGuest(signingKey, cookies, uuid);
+    return uuid;
+}
 
-    const refreshJwt = nJwt.create({
+function setGuest(signingKey: Buffer, cookies: Bun.CookieMap, uuid: string) {
+    const accessJwt = nJwt.create({
         sub: uuid,
         guest: true
     }, signingKey);
     // @ts-expect-error - no time means no expiration
-    refreshJwt.setExpiration();
+    accessJwt.setExpiration();
 
-    cookies.set('access-token', 'guest_' + refreshJwt.compact(), {
+    cookies.set('access-token', 'guest_' + accessJwt.compact(), {
         ...cookieParams,
         maxAge: 365 * 24 * 60 * 60
     });
-
-    return uuid;
 }
 
 function verifyJwt(signingKey: Buffer, jwt: string, guest: boolean): string | null {

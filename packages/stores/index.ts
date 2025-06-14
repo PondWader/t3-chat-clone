@@ -9,6 +9,15 @@ export const account = createStore({
     })
 });
 
+export const chat = createStore({
+    name: 'chat',
+    type: 'event',
+    schema: z.object({
+        chatId: z.string(),
+        title: z.string().nullable()
+    })
+})
+
 export const chatMessage = createStore({
     name: 'chat_message',
     type: 'event',

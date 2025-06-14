@@ -1,7 +1,9 @@
 import { createDatabase } from "@t3-chat-clone/db/server";
-import { account, chatMessage } from "../stores/index.js";
+import { account, chat, chatMessage } from "@t3-chat-clone/stores";
 import app from "@t3-chat-clone/app";
 import { createAuthHandler } from "./auth.js";
+import { subscribeToEvents } from "./events.js";
+import { createLinkHandler } from "./link.js";
 
 const DEFAULT_DB_URL = 'sqlite://database.sqlite';
 
@@ -11,16 +13,21 @@ const db = await createDatabase({
     dbUrl,
     stores: [
         chatMessage,
+        chat,
         account
     ]
 })
+subscribeToEvents(db);
 
 const authHandler = await createAuthHandler(db);
+const linkHandler = await createLinkHandler(authHandler, db);
 
 const server = Bun.serve({
     routes: {
         "/*": app,
         "/api/*": new Response("404 Not Found", { status: 404 }),
+        "/api/link": linkHandler.link,
+        "/api/link/generate": linkHandler.createSyncLink,
         "/api/db/ws": {
             GET: (req, server) => {
                 const { uuid, newCookies } = authHandler.auth(req);

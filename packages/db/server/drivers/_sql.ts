@@ -42,6 +42,9 @@ export function createQueryCreator(opts: CreateQueryCreatorOptions): QueryCreato
                 if (col.primaryKey) {
                     fields += ` PRIMARY KEY`
                 }
+                if (col.unique && !col.primaryKey) {
+                    fields += ` UNIQUE`
+                }
                 fields += `, `
             }
             if (fields.length != 0) {

@@ -7,6 +7,7 @@ export type ColumnType = "text" | "integer" | "real";
 export type Column = {
     primaryKey?: boolean
     nullable?: boolean
+    unique?: boolean
     type: ColumnType
 }
 
