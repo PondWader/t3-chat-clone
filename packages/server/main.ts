@@ -1,9 +1,10 @@
 import { createDatabase } from "@t3-chat-clone/db/server";
 import { account, chat, chatMessage } from "@t3-chat-clone/stores";
 import app from "@t3-chat-clone/app";
-import { createAuthHandler } from "./auth.js";
 import { subscribeToEvents } from "./events.js";
-import { createLinkHandler } from "./link.js";
+import { createAuthHandler } from "./auth/index.js";
+import { createLinkHandler } from "./auth/link.js";
+import { discordAuth } from "./auth/providers/discord.js";
 
 const DEFAULT_DB_URL = 'sqlite://database.sqlite';
 
@@ -19,18 +20,21 @@ const db = await createDatabase({
 })
 subscribeToEvents(db);
 
-const authHandler = await createAuthHandler(db);
+const authHandler = await createAuthHandler(db, [discordAuth]);
 const linkHandler = await createLinkHandler(authHandler, db);
 
 const server = Bun.serve({
     routes: {
         "/*": app,
         "/api/*": new Response("404 Not Found", { status: 404 }),
+        "/api/auth/url": () => {
+
+        },
         "/api/link": linkHandler.link,
         "/api/link/generate": linkHandler.createSyncLink,
         "/api/db/ws": {
-            GET: (req, server) => {
-                const { uuid, newCookies } = authHandler.auth(req);
+            GET: async (req, server) => {
+                const { uuid, newCookies } = await authHandler.auth(req);
 
                 const headers = new Headers();
                 for (const cookie of newCookies.toSetCookieHeaders()) {

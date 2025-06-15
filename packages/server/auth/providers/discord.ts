@@ -1,9 +1,10 @@
 import { z } from "zod/v4"
-import { createAuthProvider } from "../auth";
+import { createAuthProvider } from "../provider.js";
 
 const scopes = 'identify email';
 
 export const discordAuth = createAuthProvider({
+    name: 'Discord',
     config: z.object({
         clientId: z.string(),
         clientSecret: z.string(),

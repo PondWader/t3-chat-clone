@@ -1,5 +1,5 @@
 import { Database } from "@t3-chat-clone/db/server";
-import { AuthHandler } from "./auth";
+import { AuthHandler } from ".";
 import crypto from "crypto";
 
 export async function createLinkHandler(authHandler: AuthHandler, db: Database) {
@@ -47,7 +47,7 @@ export async function createLinkHandler(authHandler: AuthHandler, db: Database) 
             return new Response(null, { status: 204, headers });
         },
         async createSyncLink(req: Bun.BunRequest) {
-            const authStatus = authHandler.auth(req);
+            const authStatus = await authHandler.auth(req);
             if (!authStatus.guest) {
                 return Response.json({
                     error: true,
@@ -58,7 +58,7 @@ export async function createLinkHandler(authHandler: AuthHandler, db: Database) 
             const syncCode = crypto.randomBytes(12).toString('hex');
 
             await db.dbConn.create(tableName, {
-                id: crypto.randomUUID(),
+                id: Bun.randomUUIDv7(),
                 userId: authStatus.uuid,
                 expiresAt: Date.now() + 1000 * 60 * 60 * 12,
                 code: syncCode
