@@ -63,7 +63,7 @@ export default function Login() {
 
                     {/* Logo/Icon */}
                     <div className="w-20 h-20 mx-auto mb-8 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-500 to-blue-500 dark:from-purple-600 dark:to-blue-600">
-                        <span className="text-white text-2xl font-bold">TS</span>
+                        <span className="text-white text-2xl font-bold"></span>
                     </div>
 
                     {/* Title */}

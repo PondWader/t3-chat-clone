@@ -3,18 +3,19 @@ import Gemini from "../../icons/Gemini";
 import { ObjectInstance, storeObject } from "@t3-chat-clone/db";
 import { account, chatMessage } from "@t3-chat-clone/stores";
 import { Signal } from "@preact/signals";
-import { useAccount } from "../../db";
+import { useAccount, useDB } from "../../db";
 import Avatar from "../../icons/Avatar";
 
 export default function Messages(props: { messages: Signal<ObjectInstance<storeObject<typeof chatMessage>>[]> }) {
     const account = useAccount();
 
-    const isLoading = true;
+    const lastMsg = props.messages.value[props.messages.value.length - 1];
+    const isLoading = lastMsg.object.role === "user" && !lastMsg.object.error;
 
     return <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-4xl mx-auto space-y-6">
-            {props.messages.value.map((msg) => (
-                <Message account={account} msg={msg.object} id={msg.id} />
+            {props.messages.value.map((msg, i) => (
+                <Message account={account} msg={msg.object} id={msg.id} isLastMsg={i + 1 === props.messages.value.length} />
             ))}
 
             {/* Loading Message */}
@@ -50,7 +51,9 @@ export default function Messages(props: { messages: Signal<ObjectInstance<storeO
     </div>
 }
 
-function Message(props: { msg: storeObject<typeof chatMessage>, id: string, account: Signal<storeObject<typeof account> | null> }) {
+function Message(props: { msg: storeObject<typeof chatMessage>, id: string, account: Signal<storeObject<typeof account> | null>, isLastMsg: boolean }) {
+    const db = useDB();
+
     const isUserMsg = props.msg.role === 'user';
 
     return <>
@@ -69,8 +72,8 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
                 </div>
 
                 {/* Message Bubble */}
-                <div className={`rounded-2xl px-4 py-3  bg-white text-gray-900 border border-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:border-transparent`}>
-                    <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                <div className={`rounded-2xl px-4 py-3 max-w-none w-[100%] bg-white text-gray-900 border border-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:border-transparent`}>
+                    <div className="text-sm leading-relaxed whitespace-pre-wrap break-words overflow-hidden">
                         {props.msg.content}
                     </div>
 
@@ -91,15 +94,20 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
                 </div>
             </div>
         </div >
-        {props.msg.error && <div className="flex justify-center">
+        {props.msg.error && isUserMsg && <div className="flex justify-center">
             <div className={`flex items-center gap-3 px-4 py-3 rounded-lg
                 bg-red-50 border border-red-200 text-red-700 
                 dark:bg-red-900/20 dark:border dark:border-red-800/30 dark:text-red-400
             `}>
                 <AlertCircle size={16} className="flex-shrink-0" />
-                <span className="text-sm">Response timed out.</span>
-                <button
-                    className={`text-sm font-medium underline hover:no-underline transition-all
+                <span className="text-sm">{props.msg.error}</span>
+                <button onClick={() => {
+                    if (props.isLastMsg) {
+                        db.remove(chatMessage, props.id);
+                    }
+                    db.push(chatMessage, props.msg);
+                }}
+                    className={`text-sm font-medium underline hover:no-underline transition-all cursor-pointer
                         text-red-600 hover:text-red-800
                         dark:text-red-300 dark:hover:text-red-200 
                     `}
