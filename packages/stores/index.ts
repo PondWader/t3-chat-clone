@@ -31,6 +31,8 @@ export const chatMessage = createStore({
         chatId: z.string(),
         role: z.string(),
         content: z.string(),
+        model: z.string(),
+        error: z.string().nullable(),
         createdAt: z.int()
     }),
     indices: ["chatId"],

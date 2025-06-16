@@ -3,25 +3,60 @@ import { Send, Sparkles, Book, Code, GraduationCap, Search, Paperclip, MessageSq
 import GeminiIcon from "../../icons/Gemini.tsx";
 import { ModelSelectionModal } from './ModelSelectionModal.tsx';
 import { useSignal } from '@preact/signals';
-import { useRef } from 'preact/hooks';
+import { useMemo, useRef } from 'preact/hooks';
 import Sidebar from './Sidebar.tsx';
 import Examples from './Examples.tsx';
+import { useLocation, useRoute } from 'preact-iso';
+import { useChat, useDB } from '../../db.tsx';
+import { chatMessage } from '@t3-chat-clone/stores';
+import Messages from './Messages.tsx';
+import { SyncTimeoutError } from '../../../../db/client/Connection.ts';
 
 export function Chat() {
+	const route = useRoute();
+	const chatId = useMemo(() => route.params.id ?? crypto.randomUUID(), [route.params.id]);
+
 	return <div className={`overflow-y-hidden flex h-dvh font-sans bg-gray-50 dark:bg-gray-900`}>
 		<Sidebar />
-		<ChatInterface />
+		<ChatInterface chatId={chatId} newChat={!route.params.id} />
 	</div>
 };
 
-function ChatInterface() {
+function ChatInterface(props: { chatId: string, newChat: boolean }) {
+	const location = useLocation();
 	const message = useSignal('');
 	const isModelModalOpen = useSignal(false);
 	const selectedModel = useSignal('gemini-2.5-flash');
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const db = useDB();
 
-	const handleSendMessage = () => {
+	const chat = useChat(props.chatId);
+
+	const sendMessage = () => {
 		if (message.value.trim()) {
+			const pushResult = db.push(chatMessage, {
+				chatId: props.chatId,
+				role: 'user',
+				content: message.value.trim(),
+				model: selectedModel.value,
+				error: null,
+				createdAt: Date.now()
+			})
+			pushResult.catch(err => {
+				if (err === SyncTimeoutError) {
+					db.editMemory(chatMessage, pushResult.id, {
+						error: 'Sync timed out.'
+					})
+				} else {
+					console.error(err);
+					db.editMemory(chatMessage, pushResult.id, {
+						error: 'An unexpected error occured.'
+					})
+				}
+			})
+			if (props.newChat) {
+				location.route(`/chat/${props.chatId}`);
+			}
 			message.value = '';
 		}
 	};
@@ -29,7 +64,7 @@ function ChatInterface() {
 	const handleKeyPress = (e: KeyboardEvent) => {
 		if (e.key === 'Enter' && !e.shiftKey) {
 			e.preventDefault();
-			handleSendMessage();
+			sendMessage();
 		}
 	};
 
@@ -78,9 +113,12 @@ function ChatInterface() {
 	return (
 		<div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-800`}>
 			{/* Main Content Area */}
-			<div className="flex-1 flex items-center justify-center p-4 lg:p-8">
-				<Examples onMessage={m => message.value = m} />
-			</div>
+			{chat.value && chat.value.length > 0 ? <Messages messages={chat} /> : <div className="flex-1 flex items-center justify-center p-4 lg:p-8">
+				<Examples onMessage={m => {
+					message.value = m;
+					sendMessage();
+				}} />
+			</div>}
 
 			{/* Message Input Area */}
 			<div className={`border-t p-6 border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900`}>
@@ -102,7 +140,7 @@ function ChatInterface() {
 								border focus:outline-none focus:ring-1 focus:ring-blue-500/20`}
 						/>
 						<button
-							onClick={handleSendMessage}
+							onClick={sendMessage}
 							disabled={!message.value.trim()}
 							className={`absolute right-2 top-2 p-2 rounded-md ${message.value.trim()
 								? `text-purple-600 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700`

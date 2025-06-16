@@ -150,10 +150,9 @@ function UserProfile() {
         <div className="flex items-center justify-between">
             <a href="/login">
                 <div className="flex items-center gap-2 text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-900 rounded py-3 px-2 mx-2">
-                    {account.value ? <img class="rounded-full" width="40" height="40" src={account.value.avatarUrl ?? ''}></img> : <LogIn size={16} />}
-                    {/*<div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">P</span>
-            </div>*/}
+                    {account.value ?
+                        account.value.avatarUrl ? <img class="rounded-full" width="40" height="40" src={account.value.avatarUrl} /> : <Avatar />
+                        : <LogIn size={16} />}
                     <div className="flex-1">
                         <p className={`text-sm font-medium`}>
                             {account.value ? account.value.displayName : 'Login / Sync Devices'}

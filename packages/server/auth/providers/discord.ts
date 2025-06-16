@@ -29,7 +29,7 @@ export const discordAuth = createAuthProvider({
         })
         if (tokenResp.status !== 200) {
             console.error(`got non-200 status code from Discord token exchange endpoint: ${tokenResp.status}:`)
-            console.log(await tokenResp.text());
+            console.error(await tokenResp.text());
             return Response.json({ error: true, message: 'Error in validating code.' }, { status: 500 })
         }
         const token = await tokenResp.json();
@@ -46,7 +46,7 @@ export const discordAuth = createAuthProvider({
         })
         if (userResp.status !== 200) {
             console.error(`got non-200 status code from Discord user info endpoint: ${userResp.status}:`)
-            console.log(await userResp.text());
+            console.error(await userResp.text());
             return Response.json({ error: true, message: 'Error getting user information.' }, { status: 500 })
         }
         const user = await userResp.json()

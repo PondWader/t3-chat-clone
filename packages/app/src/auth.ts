@@ -25,7 +25,7 @@ export function useAuthUrls() {
                 })
         }
         loadUrls();
-    }), undefined);
+    }), []);
 }
 
 export async function login(provider: string, code: string, state: string) {

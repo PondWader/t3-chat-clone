@@ -14,6 +14,15 @@ export class MemoryStore {
         }
     }
 
+    edit<T>(store: Store<T>, msgId: string, obj: Partial<T>): T | null {
+        const storeMem = this.#stores.get(store.name);
+        if (storeMem === undefined) return null;
+        const o = storeMem.find(o => o.$msgId === msgId);
+        if (o === undefined) return null;
+        Object.assign(o, obj);
+        return o;
+    }
+
     remove<T>(store: Store<T>, key: keyof MemoryStoreObject<T>, value: string): void {
         if (!this.#stores.has(store.name)) return
         this.#stores.set(store.name,

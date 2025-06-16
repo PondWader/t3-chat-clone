@@ -15,11 +15,12 @@ export type Client = {
     db: PersistentStore,
     memory: MemoryStore,
     subscribe<T>(store: Store<T>, handler: (event: Event<T>) => void): Subscription
-    push<T>(store: Store<T>, object: T): Promise<void>
+    push<T>(store: Store<T>, object: T): PushResult<void>
     remove(store: Store<any>, id: string): Promise<void>
     get<T>(store: Store<T>, id: string): Promise<ObjectInstance<T> | null>
     getAll<T>(store: Store<T>): Promise<ObjectInstance<T>[]>
     getAllMatches<T>(store: Store<T>, key: keyof T, value: string): Promise<ObjectInstance<T>[]>
+    editMemory<T>(store: Store<T>, id: string, object: Partial<T>): void
     reconnect(): void
 }
 
@@ -64,7 +65,7 @@ export function createClient(opts: CreateClientOptions): Client {
                 msgId
             })
 
-            return client.conn.send({
+            return new PushResult(resolve => resolve(client.conn.send({
                 type: "push",
                 msgId,
                 data: {
@@ -72,7 +73,7 @@ export function createClient(opts: CreateClientOptions): Client {
                     store: store.name,
                     object: object as any
                 }
-            })
+            })), msgId)
         },
         async remove(store, id) {
             client.memory.deletions.add(id);
@@ -157,6 +158,17 @@ export function createClient(opts: CreateClientOptions): Client {
                 return filtered.slice(-1);
             }
             return filtered;
+        },
+        editMemory<T>(store: Store<T>, id: string, object: Partial<T>): void {
+            const memObj = client.memory.edit(store, id, object);
+            if (memObj !== null) {
+                eventSource.publish(store, {
+                    action: 'push',
+                    id,
+                    object: memObj,
+                    user: ""
+                })
+            }
         },
         subscribe: eventSource.subscribe,
         reconnect() {
@@ -264,3 +276,9 @@ function recordToObjectInstance<T>(record: T, key: keyof T): ObjectInstance<any>
         object: record
     }
 }
+
+export class PushResult<T> extends Promise<T> {
+    constructor(cb: ConstructorParameters<typeof Promise<T>>[0], public id: string) {
+        super(cb);
+    }
+}   

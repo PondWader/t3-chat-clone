@@ -1,8 +1,8 @@
 import { Client, createClient } from "@t3-chat-clone/db/client";
 import { account, chat, chatMessage } from "@t3-chat-clone/stores";
 import { ComponentChild, createContext } from "preact";
-import { useContext, useEffect } from "preact/hooks";
-import { useSignal } from "@preact/signals";
+import { useContext, useEffect, useMemo } from "preact/hooks";
+import { useSignal, signal, useComputed } from "@preact/signals";
 import type { storeObject, ObjectInstance } from "@t3-chat-clone/db";
 
 const DBContext = createContext<Client | null>(null);
@@ -13,23 +13,37 @@ export function useDB(): Client {
 
 export function useChat(chatId: string) {
     const db = useDB();
-    const signal = useSignal<ObjectInstance<storeObject<typeof chatMessage>>[]>([]);
+    const history = useMemo(() => signal<Map<string, ObjectInstance<storeObject<typeof chatMessage>>>>(new Map()), [chatId]);
+    const sig = useMemo(() => signal([]), [chatId]);
 
     useEffect(() => {
         db.getAllMatches(chatMessage, 'chatId', chatId)
             .then(msgs => {
-                // TODO: Sort by created ats
-                signal.value = msgs;
+                msgs.filter(m => m.object.chatId === chatId)
+                    .forEach(m => {
+                        history.value.set(m.id, m);
+                    });
+                history.value = new Map(history.value);
             })
 
         const sub = db.subscribe(chatMessage, (e) => {
-            // TODO: Update msgs
+            if (e.action === 'clear') return history.value = new Map();
+            if (e.object.chatId !== chatId) return;
+            if (e.action === 'push') {
+                history.value.set(e.id, e);
+            } else if (e.action === 'remove') {
+                history.value.delete(e.id);
+            }
+            history.value = new Map(history.value);
         })
 
         return () => sub.unsubscribe();
-    }, []);
+    }, [chatId]);
 
-    return signal;
+    return useComputed(() =>
+        [...history.value.values()]
+            .sort((a, b) => a.object.createdAt - b.object.createdAt)
+    );
 }
 
 export function useAccount() {
