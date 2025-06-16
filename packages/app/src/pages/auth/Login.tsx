@@ -1,14 +1,17 @@
 import { useSignal } from '@preact/signals';
-import { ArrowLeft, Smartphone, Shield, Users, Zap } from 'lucide-preact';
+import { ArrowLeft, Smartphone, Shield, Users, Zap, AlertCircle } from 'lucide-preact';
 import Spinner from '../../components/Spinner';
-import { useAuthUrls } from '../../auth';
+import { login, useAuthUrls } from '../../auth';
 import { useLocation } from 'preact-iso';
 import { useEffect } from 'preact/hooks';
+import { useDB } from '../../db';
 
 export default function Login() {
     const location = useLocation();
     const authUrls = useAuthUrls();
+    const error = useSignal<string>();
     const discordLoading = useSignal(false);
+    const db = useDB();
 
     const handleDiscordLogin = () => {
         discordLoading.value = true
@@ -22,6 +25,13 @@ export default function Login() {
 
         discordLoading.value = true;
         const { code, state } = location.query;
+        login('Discord', code, state).then(() => {
+            db.reconnect();
+            location.route('/');
+        }).catch(err => {
+            error.value = err.message ?? err;
+            discordLoading.value = false;
+        });
     }, [location.query]);
 
 
@@ -50,6 +60,7 @@ export default function Login() {
             {/* Main Content */}
             <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
                 <div className="max-w-md w-full">
+
                     {/* Logo/Icon */}
                     <div className="w-20 h-20 mx-auto mb-8 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-500 to-blue-500 dark:from-purple-600 dark:to-blue-600">
                         <span className="text-white text-2xl font-bold">TS</span>
@@ -64,6 +75,16 @@ export default function Login() {
                             Sign in to sync your conversations across all devices, or continue without an account.
                         </p>
                     </div>
+
+                    {/* Error */}
+                    {error.value && <div className="flex justify-center my-2 mb-4">
+                        <div className={`flex items-center gap-3 px-4 py-3 rounded-lg 
+                            dark:bg-red-900/20 dark:border dark:border-red-800/30 dark:text-red-400
+                            bg-red-50 border border-red-200 text-red-700`}>
+                            <AlertCircle size={16} className="flex-shrink-0" />
+                            <span className="text-sm">Failed to login: {error.value}</span>
+                        </div>
+                    </div>}
 
                     {/* Login Options */}
                     <div className="space-y-4 mb-8">

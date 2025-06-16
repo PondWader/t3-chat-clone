@@ -41,7 +41,7 @@ export async function createLinkHandler(authHandler: AuthHandler, db: Database) 
 
             const headers = new Headers();
             for (const cookie of newCookies.toSetCookieHeaders()) {
-                headers.set('Set-Cookie', cookie);
+                headers.append('Set-Cookie', cookie);
             }
 
             return new Response(null, { status: 204, headers });

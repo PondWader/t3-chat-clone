@@ -47,6 +47,15 @@ export async function login(provider: string, code: string, state: string) {
             }
         })
     })
+    if (resp.status !== 204 && resp.status !== 200) {
+        let json;
+        try {
+            json = await resp.json();
+        } catch {
+            throw new Error(`received unexpected status code: ${resp.status}`);
+        }
+        if (json.error === true) throw new Error(json.message);
+    }
 }
 
 function getSecureState() {

@@ -81,7 +81,7 @@ export async function createAuthHandler(db: Database, providers: AuthProvider<an
 
     const signingKey = await getSigningKey(db);
 
-    return {
+    const authHandler = {
         async auth(req: Bun.BunRequest): Promise<AuthOutput> {
             const refreshToken = req.cookies.get('refresh-token');
             const accessToken = req.cookies.get('access-token');
@@ -97,7 +97,7 @@ export async function createAuthHandler(db: Database, providers: AuthProvider<an
 
                     if (verifiedUuid === null) {
                         req.cookies.delete('access-token');
-                        return this.auth(req);
+                        return authHandler.auth(req);
                     }
 
                     uuid = verifiedUuid;
@@ -106,7 +106,7 @@ export async function createAuthHandler(db: Database, providers: AuthProvider<an
                     const verifiedUuid = verifyJwt(signingKey, accessToken, false);
                     if (verifiedUuid === null) {
                         req.cookies.delete('access-token');
-                        return this.auth(req);
+                        return authHandler.auth(req);
                     }
                     uuid = verifiedUuid;
                 }
@@ -164,11 +164,11 @@ export async function createAuthHandler(db: Database, providers: AuthProvider<an
             })
 
             const newCookies = new Bun.CookieMap();
-            createUserToken(signingKey, newCookies, conn, refreshTokensTableName, userId);
+            await createUserToken(signingKey, newCookies, conn, refreshTokensTableName, userId);
 
             const headers = new Headers();
             for (const cookie of newCookies.toSetCookieHeaders()) {
-                headers.set('Set-Cookie', cookie);
+                headers.append('Set-Cookie', cookie);
             }
 
             return new Response(null, { status: 204, headers });
@@ -195,17 +195,17 @@ export async function createAuthHandler(db: Database, providers: AuthProvider<an
         async login(req: Bun.BunRequest) {
             const json = await req.json();
             const provider = providers.find(p => p.name === json.provider);
-            if (provider === undefined) return new Response('Provider does not exis', { status: 400 });
+            if (provider === undefined) return Response.json({ error: true, message: 'Provider does not exis' }, { status: 400 });
 
             const params = json.params;
             for (const param of provider.callbackParams) {
-                if (typeof params[param] !== 'string') return new Response('Missing auth parameter', { status: 400 });;
+                if (typeof params[param] !== 'string') return Response.json({ error: true, message: 'Missing auth parameter' }, { status: 400 });;
             }
 
             const providerConfig = await conn.query(providerConfigTableName, { provider: provider.name });
-            if (providerConfig === null) return new Response('Auth provider has not been configured', { status: 400 });
+            if (providerConfig === null) return Response.json({ error: true, message: 'Auth provider has not been configured' }, { status: 400 });
 
-            return provider.authenticate(this, JSON.parse((providerConfig as any).config), params);
+            return provider.authenticate(authHandler, JSON.parse((providerConfig as any).config), params);
         },
         async getAuthUrls(state: string): Promise<Record<string, string>> {
             const urls: Record<string, string> = {};
@@ -217,6 +217,8 @@ export async function createAuthHandler(db: Database, providers: AuthProvider<an
             return urls;
         }
     }
+
+    return authHandler;
 }
 
 function createGuest(signingKey: Buffer, cookies: Bun.CookieMap) {

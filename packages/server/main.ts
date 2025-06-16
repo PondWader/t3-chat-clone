@@ -15,7 +15,7 @@ const server = Bun.serve({
 
                 const headers = new Headers();
                 for (const cookie of newCookies.toSetCookieHeaders()) {
-                    headers.set('Set-Cookie', cookie);
+                    headers.append('Set-Cookie', cookie);
                 }
 
                 if (!server.upgrade(req, {
