@@ -5,8 +5,14 @@ export const account = createStore({
     name: 'account',
     type: 'singular',
     schema: z.object({
-        email: z.email()
-    })
+        email: z.email(),
+        username: z.string(),
+        displayName: z.string(),
+        avatarUrl: z.string().optional()
+    }),
+    validateClientAction(action, object) {
+        return false;
+    },
 });
 
 export const chat = createStore({

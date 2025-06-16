@@ -113,4 +113,8 @@ export class Connection extends TypedEmitter<MessageEvents> {
         this.#destroyed = true;
         this.#ws?.close();
     }
+
+    reconnect() {
+        this.#ws?.close();
+    }
 }

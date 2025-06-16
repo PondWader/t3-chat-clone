@@ -18,8 +18,11 @@ export type Event<T> = {
     ack?: string;
 }
 
+export type StoreType = 'event' | 'singular';
+
 export type Store<T> = {
     name: string
+    type: StoreType
     schema: ZodObject
     indices: string[]
     validate(object: T): void
@@ -29,7 +32,7 @@ export type Store<T> = {
 
 export type CreateStoreOptions<T extends ZodObject> = {
     name: string
-    type: 'event' | 'singular'
+    type: StoreType
     schema: T
     indices?: Extract<keyof z.infer<T>, string>[]
     validateClientAction?(action: Exclude<Action, "partial">, object: z.infer<T>): boolean
@@ -38,6 +41,7 @@ export type CreateStoreOptions<T extends ZodObject> = {
 export function createStore<T extends ZodObject>(opts: CreateStoreOptions<T>): Store<z.infer<T>> {
     return {
         name: opts.name,
+        type: opts.type,
         schema: opts.schema.strict(),
         indices: opts.indices as any as string[] ?? [],
         validate(obj) {

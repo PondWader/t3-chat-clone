@@ -17,7 +17,7 @@ export type Database = {
     bindWebSocket(): WebSocketHandler<{ user: string; }>
     getSafeTableName(tableName: string): string
 
-    push<T>(store: Store<T>, user: string, object: T, msgId?: string): void
+    push<T>(store: Store<T>, user: string, object: T, msgId?: string): Promise<void>
     remove(store: Store<any>, user: string, objectId: string, msgId?: string): void
     getAll<T>(store: Store<T>, user: string, key: keyof T, value: string): Promise<T[]>
 }
@@ -54,14 +54,33 @@ export async function createDatabase(opts: CreateDatabaseOptions): Promise<Datab
             store.validate(object);
 
             return userQueue.syncUserAction(user, async () => {
-                const id = Bun.randomUUIDv7();
+                let id = Bun.randomUUIDv7();
 
-                await dbConn.create(store.name, {
-                    ...object as any,
-                    $id: id,
-                    $userId: user,
-                    $deleted: 0
-                })
+                if (store.type === 'singular') {
+                    const existing = await dbConn.query(store.name, {
+                        $userId: user
+                    }) as any
+                    if (existing !== null) {
+                        id = existing.$id;
+                        await dbConn.update(store.name, {
+                            $id: existing.$id
+                        }, { ...object as any })
+                    } else {
+                        await dbConn.create(store.name, {
+                            ...object as any,
+                            $id: id,
+                            $userId: user,
+                            $deleted: 0
+                        })
+                    }
+                } else {
+                    await dbConn.create(store.name, {
+                        ...object as any,
+                        $id: id,
+                        $userId: user,
+                        $deleted: 0
+                    })
+                }
 
                 eventSource.publish(store, {
                     action: 'push',

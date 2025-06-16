@@ -13,7 +13,7 @@ export const discordAuth = createAuthProvider({
     callbackParams: ['code'],
     getUrl: (config, state) => `https://discord.com/oauth2/authorize?client_id=${encodeURIComponent(config.clientId)}&redirect_uri=${encodeURIComponent(config.redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${encodeURIComponent(state)}`,
     async authenticate(handler, config, params) {
-        const tokenResp = await fetch(`https://discord.com/api/v9/oauth2/token`, {
+        const tokenResp = await fetch(`https://discord.com/api/v10/oauth2/token`, {
             method: 'POST',
             headers: {
                 'content-type': 'application/x-www-form-urlencoded'
@@ -39,7 +39,7 @@ export const discordAuth = createAuthProvider({
         }
 
         // Getting user data
-        const userResp = await fetch(`https://discord.com/api/v9/users/@me`, {
+        const userResp = await fetch(`https://discord.com/api/v10/users/@me`, {
             headers: {
                 'Authorization': `${token.token_type} ${token.access_token}`
             }
@@ -51,6 +51,6 @@ export const discordAuth = createAuthProvider({
         }
         const user = await userResp.json()
 
-        return handler.createUserResponse('discord', user.id, user.email);
+        return handler.createUserResponse('discord', user.id, user.email, user.username, user.global_name ?? user.username, user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : undefined);
     }
 })

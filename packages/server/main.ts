@@ -1,27 +1,5 @@
-import { createDatabase } from "@t3-chat-clone/db/server";
-import { account, chat, chatMessage } from "@t3-chat-clone/stores";
 import app from "@t3-chat-clone/app";
-import { subscribeToEvents } from "./events.js";
-import { createAuthHandler } from "./auth/index.js";
-import { createLinkHandler } from "./auth/link.js";
-import { discordAuth } from "./auth/providers/discord.js";
-
-const DEFAULT_DB_URL = 'sqlite://database.sqlite';
-
-const dbUrl = process.env.DB_URL ?? DEFAULT_DB_URL;
-
-const db = await createDatabase({
-    dbUrl,
-    stores: [
-        chatMessage,
-        chat,
-        account
-    ]
-})
-subscribeToEvents(db);
-
-const authHandler = await createAuthHandler(db, [discordAuth]);
-const linkHandler = await createLinkHandler(authHandler, db);
+import { authHandler, db, linkHandler } from "./instances";
 
 const server = Bun.serve({
     routes: {

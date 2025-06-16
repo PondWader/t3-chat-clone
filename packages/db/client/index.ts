@@ -19,6 +19,7 @@ export type Client = {
     remove(store: Store<any>, id: string): Promise<void>
     get<T>(store: Store<T>, id: string): Promise<ObjectInstance<T> | null>
     getAll<T>(store: Store<T>, key: keyof T, value: string): Promise<ObjectInstance<T>[]>
+    reconnect(): void
 }
 
 export type CreateClientOptions = {
@@ -138,9 +139,17 @@ export function createClient(opts: CreateClientOptions): Client {
             const objects = await this.db.getAll(store, key, value);
             const result = objects.map((o) => recordToObjectInstance(o, "$id"));
             result.push(...this.memory.getAll(store, key, value).map((o) => recordToObjectInstance(o, "$msgId")))
-            return result.filter(o => !this.memory.deletions.has(o.id));
+
+            const filtered = result.filter(o => !this.memory.deletions.has(o.id));
+            if (store.type === 'singular') {
+                return filtered.slice(-1);
+            }
+            return filtered;
         },
-        subscribe: eventSource.subscribe
+        subscribe: eventSource.subscribe,
+        reconnect() {
+            client.conn.reconnect();
+        }
     };
 
     bindConn(client, eventSource);

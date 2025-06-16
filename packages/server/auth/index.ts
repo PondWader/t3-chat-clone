@@ -3,6 +3,7 @@ import nJwt from "njwt";
 import crypto from "crypto";
 import { DatabaseDriverConn } from "../../db/server/database";
 import { AuthProvider } from "./provider";
+import { account } from "@t3-chat-clone/stores";
 
 const cookieParams = {
     secure: true,
@@ -20,7 +21,7 @@ type AuthOutput = {
 export type AuthHandler = {
     auth(req: Bun.BunRequest): Promise<AuthOutput>
     setGuest(uuid: string): Bun.CookieMap
-    createUserResponse(provider: string, id: string, email: string): Promise<Response>
+    createUserResponse(provider: string, id: string, email: string, username: string, displayName: string, avatarUrl?: string): Promise<Response>
     setProviderConfig<T>(provider: AuthProvider<T, any>, config: T): Promise<void>
     login<T>(provider: AuthProvider<T, any>, params: any): Promise<any>
 }
@@ -133,7 +134,7 @@ export async function createAuthHandler(db: Database, providers: AuthProvider<an
             setGuest(signingKey, cookies, uuid);
             return cookies;
         },
-        async createUserResponse(provider: string, providerUserId: string, email: string) {
+        async createUserResponse(provider: string, providerUserId: string, email: string, username: string, displayName: string, avatarUrl?: string) {
             let userId: string | null = null;;
             await db.dbConn.transaction(async () => {
                 const user = await db.dbConn.query(tableName, { provider, providerUserId }) as UserRecord | null;
@@ -153,6 +154,13 @@ export async function createAuthHandler(db: Database, providers: AuthProvider<an
                 }
             });
             if (userId === null) throw new Error("Something went wrong loading user ID after authentication.");
+
+            await db.push(account, userId, {
+                email,
+                username,
+                displayName,
+                avatarUrl
+            })
 
             const newCookies = new Bun.CookieMap();
             createUserToken(signingKey, newCookies, conn, refreshTokensTableName, userId);

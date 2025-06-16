@@ -14,7 +14,7 @@ export class MemoryStore {
         }
     }
 
-    remove<T>(store: Store<T>, key: keyof T | "$msgId", value: string): void {
+    remove<T>(store: Store<T>, key: keyof MemoryStoreObject<T>, value: string): void {
         if (!this.#stores.has(store.name)) return
         this.#stores.set(store.name,
             this.#stores.get(store.name)!.filter(o => o[key] !== value)
@@ -22,7 +22,7 @@ export class MemoryStore {
         return;
     }
 
-    getFirst<T>(store: Store<T>, key: keyof T | "$msgId", value: string): MemoryStoreObject<T> | null {
+    getFirst<T>(store: Store<T>, key: keyof MemoryStoreObject<T>, value: string): MemoryStoreObject<T> | null {
         if (!this.#stores.has(store.name)) return null
         return {
             ...this.#stores.get(store.name)!
@@ -30,18 +30,18 @@ export class MemoryStore {
         }
     }
 
-
-    getAll<T>(store: Store<T>, key: keyof T | "$msgId", value: string): MemoryStoreObject<T>[] {
+    getAll<T>(store: Store<T>, key: keyof MemoryStoreObject<T>, value: string): MemoryStoreObject<T>[] {
         if (!this.#stores.has(store.name)) return [];
         return this.#stores.get(store.name)!
             .filter(v => v[key] === value)
             .map(v => ({ ...v }));
     }
 
-    getLast<T>(store: Store<T>, key: keyof MemoryStoreObject<T> | "$msgId"): MemoryStoreObject<T> | null {
+    getLast<T>(store: Store<T>, key?: keyof MemoryStoreObject<T>): MemoryStoreObject<T> | null {
         if (!this.#stores.has(store.name)) return null;
         const objs = this.#stores.get(store.name)!;
         if (objs.length === 0) return null;
+        if (key === undefined) return objs[objs.length - 1];
         return {
             ...objs.sort((a, b) => {
                 const v1 = a[key], v2 = b[key];
