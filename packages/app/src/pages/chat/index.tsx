@@ -5,20 +5,7 @@ import { ModelSelectionModal } from './ModelSelectionModal.tsx';
 import { useSignal } from '@preact/signals';
 import { useRef } from 'preact/hooks';
 import Sidebar from './Sidebar.tsx';
-
-const actionButtons = [
-	{ icon: Sparkles, label: 'Create', color: 'text-purple-600' },
-	{ icon: Book, label: 'Explore', color: 'text-blue-600' },
-	{ icon: Code, label: 'Code', color: 'text-green-600' },
-	{ icon: GraduationCap, label: 'Learn', color: 'text-orange-600' },
-];
-
-const sampleQuestions = [
-	"How does AI work?",
-	"Are black holes real?",
-	"How many Rs are in the word 'strawberry'?",
-	"What is the meaning of life?",
-];
+import Examples from './Examples.tsx';
 
 export function Chat() {
 	return <div className={`overflow-y-hidden flex h-dvh font-sans bg-gray-50 dark:bg-gray-900`}>
@@ -92,53 +79,7 @@ function ChatInterface() {
 		<div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-800`}>
 			{/* Main Content Area */}
 			<div className="flex-1 flex items-center justify-center p-4 lg:p-8">
-				<div className="max-w-2xl w-full text-center">
-					{/* Welcome Message */}
-					<h1 className={`text-2xl lg:text-3xl font-bold mb-6 lg:mb-8 text-gray-900 dark:text-white`}>
-						How can I help you, Pond?
-					</h1>
-
-					{/* Action Buttons */}
-					<div className="flex flex-wrap justify-center gap-2 lg:gap-4 mb-8 lg:mb-12">
-						{actionButtons.map((button) => {
-							const IconComponent = button.icon;
-							return (
-								<button
-									key={button.label}
-									className={`flex items-center gap-2 px-4 py-2 rounded-lg 
-										bg-white hover:bg-gray-100 text-gray-900 shadow-sm border border-gray-200
-										dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white dark:border-transparent
-										`}
-								>
-									<IconComponent size={16} className={button.color} />
-									<span className="text-sm font-medium">{button.label}</span>
-								</button>
-							);
-						})}
-					</div>
-
-					{/* Sample Questions */}
-					<div className="space-y-3">
-						{sampleQuestions.map((question, index) => (
-							<button
-								key={index}
-								onClick={() => message.value = question}
-								className={`group relative block w-full text-left p-3 lg:p-4 rounded-lg 
-									dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 dark:hover:text-white dark:border-transparent
-									bg-white hover:bg-gray-100 text-gray-700 hover:text-gray-900 shadow-sm border border-gray-200
-									`}
-							>
-								<div className="flex items-center justify-between">
-									<span className="text-sm pr-8">{question}</span>
-									<Send
-										size={16}
-										className={`opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity duration-200 text-gray-500 dark:text-gray-400`}
-									/>
-								</div>
-							</button>
-						))}
-					</div>
-				</div>
+				<Examples onMessage={m => message.value = m} />
 			</div>
 
 			{/* Message Input Area */}
