@@ -26,3 +26,5 @@ await authHandler.setProviderConfig(discordAuth, {
     clientSecret,
     redirectUri
 })
+
+process.exit(0);

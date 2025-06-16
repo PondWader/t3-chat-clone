@@ -149,15 +149,17 @@ export class PersistentStore {
         })
     }
 
-    getAll<T>(store: Store<T>, key: keyof PersistentStoreObject<T>, value: any): Promise<PersistentStoreObject<T>[]> {
-        if (typeof key !== 'string' || !this.#isIndex(store, key)) throw new Error(`Key "${key.toString()}" is not an index in store.`);
+    getAll<T>(store: Store<T>, key?: keyof PersistentStoreObject<T>, value?: any): Promise<PersistentStoreObject<T>[]> {
+        if (key !== undefined && (typeof key !== 'string' || !this.#isIndex(store, key))) throw new Error(`Key "${key.toString()}" is not an index in store.`);
 
         return this.#acquireLockTransaction(store.name, "readonly", tx => {
             return new Promise(async (resolve, reject) => {
                 const objectStore = tx.objectStore(store.name);
 
                 let request;
-                if (key === '$id') {
+                if (key === undefined) {
+                    request = objectStore.getAll();
+                } else if (key === '$id') {
                     request = objectStore.getAll(value);
                 } else {
                     const index = objectStore.index(key);

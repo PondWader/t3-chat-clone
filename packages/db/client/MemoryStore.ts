@@ -30,9 +30,13 @@ export class MemoryStore {
         }
     }
 
-    getAll<T>(store: Store<T>, key: keyof MemoryStoreObject<T>, value: string): MemoryStoreObject<T>[] {
+    getAll<T>(store: Store<T>, key?: keyof MemoryStoreObject<T>, value?: string): MemoryStoreObject<T>[] {
         if (!this.#stores.has(store.name)) return [];
-        return this.#stores.get(store.name)!
+        const storeValues = this.#stores.get(store.name)!;
+        if (key === undefined) {
+            return storeValues;
+        }
+        return storeValues
             .filter(v => v[key] === value)
             .map(v => ({ ...v }));
     }

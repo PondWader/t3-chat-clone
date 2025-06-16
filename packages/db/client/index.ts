@@ -18,7 +18,8 @@ export type Client = {
     push<T>(store: Store<T>, object: T): Promise<void>
     remove(store: Store<any>, id: string): Promise<void>
     get<T>(store: Store<T>, id: string): Promise<ObjectInstance<T> | null>
-    getAll<T>(store: Store<T>, key: keyof T, value: string): Promise<ObjectInstance<T>[]>
+    getAll<T>(store: Store<T>): Promise<ObjectInstance<T>[]>
+    getAllMatches<T>(store: Store<T>, key: keyof T, value: string): Promise<ObjectInstance<T>[]>
     reconnect(): void
 }
 
@@ -135,12 +136,23 @@ export function createClient(opts: CreateClientOptions): Client {
             }
             return object;
         },
-        async getAll(this: Client, store, key, value) {
+        async getAll(store) {
+            const objects = await this.db.getAll(store);
+            const result = objects.map((o) => recordToObjectInstance(o, "$id"));
+            result.push(...client.memory.getAll(store).map((o) => recordToObjectInstance(o, "$msgId")))
+
+            const filtered = result.filter(o => !client.memory.deletions.has(o.id));
+            if (store.type === 'singular') {
+                return filtered.slice(-1);
+            }
+            return filtered;
+        },
+        async getAllMatches(store, key, value) {
             const objects = await this.db.getAll(store, key, value);
             const result = objects.map((o) => recordToObjectInstance(o, "$id"));
-            result.push(...this.memory.getAll(store, key, value).map((o) => recordToObjectInstance(o, "$msgId")))
+            result.push(...client.memory.getAll(store, key, value).map((o) => recordToObjectInstance(o, "$msgId")))
 
-            const filtered = result.filter(o => !this.memory.deletions.has(o.id));
+            const filtered = result.filter(o => !client.memory.deletions.has(o.id));
             if (store.type === 'singular') {
                 return filtered.slice(-1);
             }

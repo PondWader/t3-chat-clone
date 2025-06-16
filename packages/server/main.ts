@@ -5,9 +5,8 @@ const server = Bun.serve({
     routes: {
         "/*": app,
         "/api/*": new Response("404 Not Found", { status: 404 }),
-        "/api/auth/url": () => {
-
-        },
+        "/api/auth/login": authHandler.login,
+        "/api/auth/url": async (req) => Response.json(await authHandler.getAuthUrls(new URL(req.url).searchParams.get('state') ?? '')),
         "/api/link": linkHandler.link,
         "/api/link/generate": linkHandler.createSyncLink,
         "/api/db/ws": {

@@ -16,7 +16,7 @@ export function useChat(chatId: string) {
     const signal = useSignal<ObjectInstance<storeObject<typeof chatMessage>>[]>([]);
 
     useEffect(() => {
-        db.getAll(chatMessage, 'chatId', chatId)
+        db.getAllMatches(chatMessage, 'chatId', chatId)
             .then(msgs => {
                 // TODO: Sort by created ats
                 signal.value = msgs;
@@ -26,9 +26,32 @@ export function useChat(chatId: string) {
             // TODO: Update msgs
         })
 
-        return () => {
-            sub.unsubscribe();
-        }
+        return () => sub.unsubscribe();
+    }, []);
+
+    return signal;
+}
+
+export function useAccount() {
+    const db = useDB();
+    const signal = useSignal<storeObject<typeof account> | null>(null);
+
+    useEffect(() => {
+        db.getAll(account).then(acc => {
+            if (acc.length !== 0) {
+                signal.value = acc[0].object;
+            }
+        });
+
+        const sub = db.subscribe(account, e => {
+            if (e.action === 'push') {
+                signal.value = e.object;
+            } else if (e.action === 'remove' || e.action === 'clear') {
+                signal.value = null;
+            }
+        })
+
+        return () => sub.unsubscribe();
     }, []);
 
     return signal;

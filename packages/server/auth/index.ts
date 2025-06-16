@@ -23,7 +23,8 @@ export type AuthHandler = {
     setGuest(uuid: string): Bun.CookieMap
     createUserResponse(provider: string, id: string, email: string, username: string, displayName: string, avatarUrl?: string): Promise<Response>
     setProviderConfig<T>(provider: AuthProvider<T, any>, config: T): Promise<void>
-    login<T>(provider: AuthProvider<T, any>, params: any): Promise<any>
+    login(req: Bun.BunRequest): Promise<any>
+    getAuthUrls(state: string): Promise<Record<string, string>>
 }
 
 type UserRecord = {
@@ -159,7 +160,7 @@ export async function createAuthHandler(db: Database, providers: AuthProvider<an
                 email,
                 username,
                 displayName,
-                avatarUrl
+                avatarUrl: avatarUrl ?? null
             })
 
             const newCookies = new Bun.CookieMap();
@@ -191,7 +192,12 @@ export async function createAuthHandler(db: Database, providers: AuthProvider<an
                 }
             });
         },
-        async login<T>(provider: AuthProvider<T, any>, params: any) {
+        async login(req: Bun.BunRequest) {
+            const json = await req.json();
+            const provider = providers.find(p => p.name === json.provider);
+            if (provider === undefined) return new Response('Provider does not exis', { status: 400 });
+
+            const params = json.params;
             for (const param of provider.callbackParams) {
                 if (typeof params[param] !== 'string') return new Response('Missing auth parameter', { status: 400 });;
             }
@@ -200,6 +206,15 @@ export async function createAuthHandler(db: Database, providers: AuthProvider<an
             if (providerConfig === null) return new Response('Auth provider has not been configured', { status: 400 });
 
             return provider.authenticate(this, JSON.parse((providerConfig as any).config), params);
+        },
+        async getAuthUrls(state: string): Promise<Record<string, string>> {
+            const urls: Record<string, string> = {};
+            for (const provider of providers) {
+                const result = await conn.query(providerConfigTableName, { provider: provider.name }) as any | null;
+                if (result === null) continue;
+                urls[provider.name.toLowerCase()] = provider.getUrl(JSON.parse(result.config), state);
+            }
+            return urls;
         }
     }
 }

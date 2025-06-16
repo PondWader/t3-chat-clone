@@ -63,7 +63,8 @@ export async function createDatabase(opts: CreateDatabaseOptions): Promise<Datab
                     if (existing !== null) {
                         id = existing.$id;
                         await dbConn.update(store.name, {
-                            $id: existing.$id
+                            $id: existing.$id,
+                            $userId: user
                         }, { ...object as any })
                     } else {
                         await dbConn.create(store.name, {

@@ -1,6 +1,8 @@
-import { Plus, Search, MessageSquare, Settings, Moon, Sun, X, PanelLeftOpen } from 'lucide-preact';
+import { Plus, Search, MessageSquare, Settings, Moon, Sun, X, PanelLeftOpen, LogIn } from 'lucide-preact';
 import { currentTheme, toggleTheme } from '../../theme';
 import { useComputed, useSignal } from '@preact/signals';
+import { useAccount } from '../../db';
+import Avatar from '../../icons/Avatar';
 
 type ChatSession = {
     id: string;
@@ -121,28 +123,7 @@ export default function Sidebar() {
                     </div>
                 </div>
 
-                {/* User Profile */}
-                <div className={`p-4 border-t border-gray-200 dark:border-gray-700`}>
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                            <span className="text-white text-sm font-medium">P</span>
-                        </div>
-                        <div className="flex-1">
-                            <p className={`text-sm font-medium text-gray-900 dark:text-white`}>
-                                Pond Wader
-                            </p>
-                            <p className={`text-xs text-gray-500 dark:text-gray-400`}>
-                                Free
-                            </p>
-                        </div>
-                        <button className={`p-1 rounded-md
-                        hover:bg-gray-100 text-gray-500 hover:text-gray-700
-                        dark:hover:bg-gray-800 dark:text-gray-400 dark:hover:text-white
-                    `}>
-                            <Settings size={16} />
-                        </button>
-                    </div>
-                </div>
+                <UserProfile />
             </div>
         </span>
     </>
@@ -160,4 +141,35 @@ function ThemeToggle() {
     >
         {icon}
     </button>
+}
+
+function UserProfile() {
+    const account = useAccount();
+
+    return <div className="py-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between">
+            <a href="/login">
+                <div className="flex items-center gap-2 text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-900 rounded py-3 px-2 mx-2">
+                    <LogIn size={16} />
+                    {/*<div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-medium">P</span>
+            </div>*/}
+                    <div className="flex-1">
+                        <p className={`text-sm font-medium`}>
+                            {account.value ? account.value.displayName : 'Login / Sync Devices'}
+                        </p>
+                        {/*<p className={`text-xs text-gray-500 dark:text-gray-400`}>
+                            Guest
+                        </p>*/}
+                    </div>
+                </div>
+            </a>
+            <a href="/settings" className={`p-3 mx-2 rounded-md
+                hover:bg-gray-200 text-gray-500 hover:text-gray-700
+                dark:hover:bg-gray-900 dark:text-gray-400 dark:hover:text-white
+            `}>
+                <Settings size={16} />
+            </a>
+        </div>
+    </div>
 }

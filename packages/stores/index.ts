@@ -8,7 +8,7 @@ export const account = createStore({
         email: z.email(),
         username: z.string(),
         displayName: z.string(),
-        avatarUrl: z.string().optional()
+        avatarUrl: z.string().nullable()
     }),
     validateClientAction(action, object) {
         return false;
