@@ -13,7 +13,7 @@ export default function Messages(props: { messages: Signal<ObjectInstance<storeO
     const isLoading = lastMsg.object.role === "user" && !lastMsg.object.error;
 
     return <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-[90vw] lg:max-w-[min(56rem,70vw)] mx-auto space-y-6">
             {props.messages.value.map((msg, i) => (
                 <Message account={account} msg={msg.object} id={msg.id} isLastMsg={i + 1 === props.messages.value.length} />
             ))}
@@ -61,7 +61,7 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
             key={props.id}
             className={`flex ${isUserMsg ? 'justify-end' : 'justify-start'}`}
         >
-            <div className={`flex gap-3 max-w-[80%] ${isUserMsg ? 'flex-row-reverse' : 'flex-row'}`}>
+            <div className={`flex gap-3 max-w-[90%] lg:max-w-[80%] ${isUserMsg ? 'flex-row-reverse' : 'flex-row'}`}>
                 {/* Avatar */}
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-200 dark:bg-gray-700`}>
                     {isUserMsg ? (
@@ -72,8 +72,8 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
                 </div>
 
                 {/* Message Bubble */}
-                <div className={`rounded-2xl px-4 py-3 max-w-none w-[100%] bg-white text-gray-900 border border-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:border-transparent`}>
-                    <div className="text-sm leading-relaxed whitespace-pre-wrap break-words overflow-hidden">
+                <div className={`rounded-2xl px-4 py-3 min-w-0 bg-white text-gray-900 border border-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:border-transparent`}>
+                    <div className="text-sm leading-relaxed whitespace-pre-wrap overflow-hidden break-words overflow-wrap-anywhere">
                         {props.msg.content}
                     </div>
 
