@@ -40,12 +40,12 @@ export default function Login() {
             {/* Header */}
             <div className="border-b px-6 py-4 border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
                 <div className="flex items-center gap-4">
-                    <a
-                        href="/"
-                        className="p-2 rounded-lg transition-colors hover:bg-gray-100 text-gray-500 hover:text-gray-700 dark:hover:bg-gray-700 dark:text-gray-400 dark:hover:text-white"
+                    <button
+                        onClick={() => history.go(-1)}
+                        class="cursor-pointer p-2 rounded-lg transition-colors hover:bg-gray-100 text-gray-500 hover:text-gray-700 dark:hover:bg-gray-700 dark:text-gray-400 dark:hover:text-white"
                     >
                         <ArrowLeft size={20} />
-                    </a>
+                    </button>
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                             Connect to keep access to your chats

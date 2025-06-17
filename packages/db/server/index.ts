@@ -1,5 +1,5 @@
 import { WebSocketHandler } from "bun";
-import { Action, Event, Store } from "../index.js";
+import { Action, Event, ObjectInstance, Store } from "../index.js";
 import { cleanRecord, connect, createMetaTables, createStoreTable, DatabaseDriverConn } from "./database.js";
 import { createWsBinding } from "./websocket.js";
 import { UserQueue } from "./UserQueue.js";
@@ -24,7 +24,7 @@ export type Database = {
 
     push<T>(store: Store<T>, user: string, object: T, msgId?: string, id?: string): Promise<void>
     remove(store: Store<any>, user: string, objectId: string, msgId?: string): void
-    getAll<T>(store: Store<T>, user: string, key: keyof T, value: string): Promise<T[]>
+    getAll<T>(store: Store<T>, user: string, key: keyof T, value: any): Promise<ObjectInstance<T>[]>
     partial<T>(store: Store<T>, user: string): PartialStream<T>
 }
 
@@ -132,8 +132,16 @@ export async function createDatabase(opts: CreateDatabaseOptions): Promise<Datab
                 });
             })
         },
-        async getAll(store, user, key, value) {
-            return [];
+        async getAll<T>(store: Store<T>, user: string, key: keyof T, value: any) {
+            const records = await dbConn.queryAll(store.name, { $userId: user, [key]: value }) as T[]
+            return records.map((r: any) => {
+                const id = r.$id;
+                cleanRecord(r);
+                return {
+                    id,
+                    object: r
+                }
+            });
         },
         partial(store, user) {
             return createPartialStream(this, eventSource, store, user)

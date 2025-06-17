@@ -1,6 +1,6 @@
 import { Database } from "@t3-chat-clone/db/server";
 import { chat, chatMessage } from "@t3-chat-clone/stores";
-import { streamText } from "ai";
+import { CoreMessage, streamText } from "ai";
 import { groq } from "@ai-sdk/groq";
 
 const bufferMs = 20;
@@ -14,11 +14,18 @@ export function subscribeToEvents(db: Database) {
 
     db.subscribe(chatMessage, async e => {
         if (e.action === 'push' && e.object.role === 'user') {
+            const history = await db.getAll(chatMessage, e.user, "chatId", e.object.chatId)
+            const messages: CoreMessage[] = [];
+            for (const msg of history) {
+                if (msg.id === e.id) break;
+                if (msg.object.error) continue;
+                messages.push({ role: msg.object.role as any, content: msg.object.content });
+            }
+            messages.push({ role: 'user', content: e.object.content });
+
             const { textStream } = streamText({
                 model: groq('llama-3.1-8b-instant'),
-                messages: [
-                    { role: 'user', content: e.object.content }
-                ]
+                messages
             });
 
             const stream = db.partial(chatMessage, e.user);

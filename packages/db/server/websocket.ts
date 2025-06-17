@@ -2,7 +2,7 @@ import { ServerWebSocket, WebSocketHandler } from "bun";
 import { Database } from "./index.js";
 import { clientHelloData, pushData, PushData, RemoveData, removeData, type Message, type MessageType } from "../shared/messages.js";
 import { Store } from "../index.js";
-import { cleanRecord, specialColumns } from "./database.js";
+import { cleanRecord } from "./database.js";
 
 type ConnData = {
     synced: boolean;

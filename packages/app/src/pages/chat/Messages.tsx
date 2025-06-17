@@ -14,7 +14,7 @@ export default function Messages(props: { messages: Signal<ObjectInstance<storeO
     const isLoading = lastMsg.object.role === "user" && !lastMsg.object.error;
 
     return <div className="flex-1 overflow-y-auto p-6 flex-col-reverse" id="messages-display">
-        <div className="max-w-[90vw] lg:max-w-[min(56rem,70vw)] mx-auto space-y-6">
+        <div className="max-w-[90vw] lg:max-w-[min(56rem,70vw)] mx-auto space-y-6 mb-[300px]">
             {props.messages.value.map((msg, i) => (
                 <Message account={account} msg={msg.object} id={msg.id} isLastMsg={i + 1 === props.messages.value.length} />
             ))}

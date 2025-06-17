@@ -29,13 +29,15 @@ const highlightTheme = {
     ident: "text-blue-300",
     number: "text-lime-400",
     string: "text-amber-600",
-    bool: "text-rose-400"
+    bool: "text-rose-400",
+    control: "text-purple-400"
 }
 
 const varKeywords = ["var", "let", "const"];
-const funcKeywords = ["fn", "func", "function"];
+const funcKeywords = ["fn", "func", "function", "def", "class"];
 const boolKeywords = ["true", "false", "True", "False"]
 const stringQuotes = ['"', "'", "`"];
+const controlKeywords = ["if", "else", "elif", "while", "for", "goto", "try", "catch", "finally", "break", "continue", "in", "or", "and", "return", "not"]
 
 /**
  * Very minimal code highlighter
@@ -76,6 +78,8 @@ function highlight(code: string, lang: string) {
                     out += `<span class="${highlightTheme.func}">${htmlEscape(currentIdent)}</span>`
                 else if (boolKeywords.includes(currentIdent))
                     out += `<span class="${highlightTheme.bool}">${htmlEscape(currentIdent)}</span>`
+                else if (controlKeywords.includes(currentIdent))
+                    out += `<span class="${highlightTheme.control}">${htmlEscape(currentIdent)}</span>`
                 else
                     out += `<span class="${highlightTheme.ident}">${htmlEscape(currentIdent)}</span>`
             }
