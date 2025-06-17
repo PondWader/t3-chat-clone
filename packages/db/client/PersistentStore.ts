@@ -138,7 +138,7 @@ export class PersistentStore {
                 }
 
                 request.onsuccess = () => {
-                    resolve(request.result);
+                    resolve(request.result ?? null);
                 }
                 request.onerror = (e) => {
                     const err = (e.target as any).error;

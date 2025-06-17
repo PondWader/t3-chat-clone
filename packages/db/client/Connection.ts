@@ -94,15 +94,19 @@ export class Connection extends TypedEmitter<MessageEvents> {
                     resolve();
                 }
 
-                setTimeout(() => {
-                    reject(SyncTimeoutError);
-                }, this.#timeoutMs);
+                if (msg.msgId) {
+                    setTimeout(() => {
+                        this.#pendingMsgs.delete(msg.msgId!)
+                        reject(SyncTimeoutError);
+                    }, this.#timeoutMs);
+                }
             })
         } else {
             return new Promise<void>((resolve, reject) => {
                 this.#writeQueue.push({ msg: json, resolve });
 
                 setTimeout(() => {
+                    this.#writeQueue = this.#writeQueue.filter(v => v.resolve !== resolve)
                     reject(SyncTimeoutError);
                 }, this.#timeoutMs);
             })

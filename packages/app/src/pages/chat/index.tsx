@@ -1,9 +1,9 @@
 import { FunctionalComponent } from 'preact';
-import { Send, Sparkles, Book, Code, GraduationCap, Search, Paperclip, MessageSquareText } from 'lucide-preact';
+import { Send, Search, Paperclip, MessageSquareText } from 'lucide-preact';
 import GeminiIcon from "../../icons/Gemini.tsx";
 import { ModelSelectionModal } from './ModelSelectionModal.tsx';
-import { effect, useSignal } from '@preact/signals';
-import { useEffect, useMemo, useRef } from 'preact/hooks';
+import { useSignal } from '@preact/signals';
+import { useCallback, useEffect, useMemo, useRef } from 'preact/hooks';
 import Sidebar from './Sidebar.tsx';
 import Examples from './Examples.tsx';
 import { useLocation, useRoute } from 'preact-iso';
@@ -36,12 +36,13 @@ function ChatInterface(props: { chatId: string, newChat: boolean }) {
 		scrollToBottomOfChat();
 	}, [])
 
-	const sendMessage = () => {
-		if (message.value.trim()) {
+	const sendMessage = useCallback((msg?: string) => {
+		msg = msg ?? message.value.trim();
+		if (msg) {
 			const pushResult = db.push(chatMessage, {
 				chatId: props.chatId,
 				role: 'user',
-				content: message.value.trim(),
+				content: msg,
 				model: selectedModel.value,
 				error: null,
 				createdAt: Date.now()
@@ -64,7 +65,7 @@ function ChatInterface(props: { chatId: string, newChat: boolean }) {
 			message.value = '';
 			scrollToBottomOfChat();
 		}
-	};
+	}, []);
 
 	const handleKeyPress = (e: KeyboardEvent) => {
 		if (e.key === 'Enter' && !e.shiftKey) {
@@ -118,7 +119,7 @@ function ChatInterface(props: { chatId: string, newChat: boolean }) {
 	return (
 		<div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-800`}>
 			{/* Main Content Area */}
-			{chat.value && chat.value.length > 0 ? <Messages messages={chat} /> : <div className="flex-1 flex items-center justify-center p-4 lg:p-8">
+			{chat.value && chat.value.length > 0 ? <Messages messages={chat} sendMessage={sendMessage} /> : <div className="flex-1 flex items-center justify-center p-4 lg:p-8">
 				<Examples onMessage={m => {
 					message.value = m;
 					sendMessage();
@@ -145,7 +146,7 @@ function ChatInterface(props: { chatId: string, newChat: boolean }) {
 								border focus:outline-none focus:ring-1 focus:ring-blue-500/20`}
 						/>
 						<button
-							onClick={sendMessage}
+							onClick={() => sendMessage()}
 							disabled={!message.value.trim()}
 							className={`absolute right-2 top-2 p-2 rounded-md ${message.value.trim()
 								? `text-purple-600 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700`

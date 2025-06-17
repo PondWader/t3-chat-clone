@@ -98,6 +98,13 @@ export function createClient(opts: CreateClientOptions): Client {
                 if (mObject === null) return;
                 object = recordToObjectInstance(mObject, "$msgId");
 
+                eventSource.publish(store, {
+                    action: "remove",
+                    object: mObject,
+                    user: "",
+                    id
+                })
+
                 // wait for push from server, then send remove
                 p = new Promise((resolve, reject) => {
                     const sub = client.subscribe(store, e => {
@@ -165,7 +172,7 @@ export function createClient(opts: CreateClientOptions): Client {
                 eventSource.publish(store, {
                     action: 'push',
                     id,
-                    object: memObj,
+                    object: recordToObjectInstance(memObj, "$msgId").object,
                     user: ""
                 })
             }
@@ -280,6 +287,7 @@ async function createClientHello(client: Client): Promise<ClientHelloData> {
 }
 
 function recordToObjectInstance<T>(record: T, key: keyof T): ObjectInstance<any> {
+    record = { ...record };
     const id = record[key] as string;
     delete record[key];
     return {

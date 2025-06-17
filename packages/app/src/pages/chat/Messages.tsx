@@ -7,7 +7,7 @@ import { useAccount, useDB } from "../../db";
 import Avatar from "../../icons/Avatar";
 import Markdown from "../../components/Markdown";
 
-export default function Messages(props: { messages: Signal<ObjectInstance<storeObject<typeof chatMessage>>[]> }) {
+export default function Messages(props: { messages: Signal<ObjectInstance<storeObject<typeof chatMessage>>[]>, sendMessage: (msg: string) => void }) {
     const account = useAccount();
 
     const lastMsg = props.messages.value[props.messages.value.length - 1];
@@ -16,7 +16,7 @@ export default function Messages(props: { messages: Signal<ObjectInstance<storeO
     return <div className="flex-1 overflow-y-auto p-6 flex-col-reverse" id="messages-display">
         <div className="max-w-[90vw] lg:max-w-[min(56rem,70vw)] mx-auto space-y-6 mb-[300px]">
             {props.messages.value.map((msg, i) => (
-                <Message account={account} msg={msg.object} id={msg.id} isLastMsg={i + 1 === props.messages.value.length} />
+                <Message account={account} msg={msg.object} id={msg.id} isLastMsg={i + 1 === props.messages.value.length} sendMessage={props.sendMessage} />
             ))}
 
             {/* Loading Message */}
@@ -52,7 +52,7 @@ export default function Messages(props: { messages: Signal<ObjectInstance<storeO
     </div>
 }
 
-function Message(props: { msg: storeObject<typeof chatMessage>, id: string, account: Signal<storeObject<typeof account> | null>, isLastMsg: boolean }) {
+function Message(props: { msg: storeObject<typeof chatMessage>, id: string, account: Signal<storeObject<typeof account> | null>, isLastMsg: boolean, sendMessage: (msg: string) => void }) {
     const db = useDB();
 
     const isUserMsg = props.msg.role === 'user';
@@ -103,10 +103,8 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
                 <AlertCircle size={16} className="flex-shrink-0" />
                 <span className="text-sm">{props.msg.error}</span>
                 <button onClick={() => {
-                    if (props.isLastMsg) {
-                        db.remove(chatMessage, props.id);
-                    }
-                    db.push(chatMessage, props.msg);
+                    db.remove(chatMessage, props.id);
+                    props.sendMessage(props.msg.content);
                 }}
                     className={`text-sm font-medium underline hover:no-underline transition-all cursor-pointer
                         text-red-600 hover:text-red-800
