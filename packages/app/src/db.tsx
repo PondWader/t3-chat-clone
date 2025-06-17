@@ -11,22 +11,34 @@ export function useDB(): Client {
     return useContext(DBContext)!;
 }
 
-export function useChat(chatId: string) {
-    const history = useStore(chatMessage, "chatId", chatId)
+const chatCache = new Map<string, Map<string, ObjectInstance<any>>>();
 
-    return useMemo(() => computed(() =>
-        [...history.value.values()]
-            .sort((a, b) => a.object.createdAt - b.object.createdAt)
-    ), [chatId]);
+export function useChat(chatId: string | null) {
+    if (chatId === null) return useSignal([]);
+
+    const history = useStore(chatMessage, "chatId", chatId, chatCache.get(chatId))
+
+    return useMemo(() => computed(() => {
+        if (history.value.size < 128) {
+            if (chatCache.size > 5) {
+                chatCache.delete(chatCache.keys().next().value!)
+            }
+            chatCache.set(chatId, history.value);
+        }
+
+        return [...history.value.values()]
+            .sort((a, b) => a.object.createdAt - b.object.createdAt);
+    }), [chatId]);
 }
 
 export function useChats() {
-    return useStore(chat);
+    const chats = useStore(chat);
+    return useComputed(() => [...chats.value.values()]);
 }
 
-export function useStore<T>(store: Store<T>, key?: keyof T, value?: any) {
+export function useStore<T>(store: Store<T>, key?: keyof T, value?: any, init?: Map<string, ObjectInstance<T>>) {
     const db = useDB();
-    const items = useMemo(() => signal<Map<string, ObjectInstance<T>>>(new Map()), [store, key, value]);
+    const items = useMemo(() => signal<Map<string, ObjectInstance<T>>>(init ?? new Map()), [store, key, value]);
 
     useEffect(() => {
         if (key) {

@@ -13,16 +13,14 @@ import Messages from './Messages.tsx';
 import { SyncTimeoutError } from '../../../../db/client/Connection.ts';
 
 export function Chat() {
-	const route = useRoute();
-	const chatId = useMemo(() => route.params.id ?? crypto.randomUUID(), [route.params.id]);
-
 	return <div className={`overflow-y-hidden flex h-dvh font-sans bg-gray-50 dark:bg-gray-900`}>
 		<Sidebar />
-		<ChatInterface chatId={chatId} newChat={!route.params.id} />
+		<ChatInterface />
 	</div>
 };
 
-function ChatInterface(props: { chatId: string, newChat: boolean }) {
+function ChatInterface() {
+	const route = useRoute();
 	const location = useLocation();
 	const message = useSignal('');
 	const isModelModalOpen = useSignal(false);
@@ -30,7 +28,7 @@ function ChatInterface(props: { chatId: string, newChat: boolean }) {
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const db = useDB();
 
-	const chat = useChat(props.chatId);
+	const chat = useChat(route.params.id ?? null);
 
 	useEffect(() => {
 		scrollToBottomOfChat();
@@ -38,9 +36,10 @@ function ChatInterface(props: { chatId: string, newChat: boolean }) {
 
 	const sendMessage = useCallback((msg?: string) => {
 		msg = msg ?? message.value.trim();
+		const msgChatId = route.params.id ?? crypto.randomUUID();
 		if (msg) {
 			const pushResult = db.push(chatMessage, {
-				chatId: props.chatId,
+				chatId: msgChatId,
 				role: 'user',
 				content: msg,
 				model: selectedModel.value,
@@ -59,13 +58,13 @@ function ChatInterface(props: { chatId: string, newChat: boolean }) {
 					})
 				}
 			})
-			if (props.newChat) {
-				location.route(`/chat/${props.chatId}`);
+			if (!route.params.id) {
+				location.route(`/chat/${msgChatId}`);
 			}
 			message.value = '';
 			scrollToBottomOfChat();
 		}
-	}, []);
+	}, [route.params.id, message]);
 
 	const handleKeyPress = (e: KeyboardEvent) => {
 		if (e.key === 'Enter' && !e.shiftKey) {
@@ -138,6 +137,13 @@ function ChatInterface(props: { chatId: string, newChat: boolean }) {
 								handleMessageChange();
 							}}
 							onKeyPress={handleKeyPress}
+							onKeyDown={e => {
+								if (e.key === 'Tab') {
+									console.log('tab')
+									e.preventDefault();
+									message.value += '    ';
+								}
+							}}
 							placeholder="Type your message here..."
 							rows={1}
 							className={`w-full px-4 py-3 pr-12 rounded-lg resize-none min-h-[44px] leading-[24px] overflow-y-hidden

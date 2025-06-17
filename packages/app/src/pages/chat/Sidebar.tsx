@@ -1,8 +1,11 @@
 import { Plus, Search, MessageSquare, Settings, Moon, Sun, X, PanelLeftOpen, LogIn } from 'lucide-preact';
 import { currentTheme, toggleTheme } from '../../theme';
-import { useComputed, useSignal } from '@preact/signals';
-import { useAccount } from '../../db';
+import { Signal, useComputed, useSignal } from '@preact/signals';
+import { useAccount, useChats } from '../../db';
 import Avatar from '../../icons/Avatar';
+import { ObjectInstance, storeObject } from '@t3-chat-clone/db';
+import { chat } from '@t3-chat-clone/stores';
+import { useRoute } from 'preact-iso';
 
 type ChatSession = {
     id: string;
@@ -74,54 +77,7 @@ export default function Sidebar() {
                     </a>
                 </div>
 
-                {/* Search */}
-                <div className="p-4">
-                    <div className="relative">
-                        <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400`} />
-                        <input
-                            type="text"
-                            placeholder="Search your threads..."
-                            className={`w-full pl-10 pr-4 py-2 rounded-lg text-sm 
-                            bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500 focus:border-gray-300
-                            dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-gray-600
-                            border focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
-                        />
-                    </div>
-                </div>
-
-                {/* Chat Sessions */}
-                <div className="flex-1 overflow-y-auto">
-                    <div className="px-4 pb-4">
-                        {['Today', 'Yesterday', 'Last 7 Days', 'Last 30 Days'].map((category) => {
-                            const sessionsInCategory = chatSessions.filter(session => session.category === category);
-                            if (sessionsInCategory.length === 0) return null;
-
-                            return (
-                                <div key={category} className="mb-6">
-                                    <h3 className={`text-xs font-medium mb-2 px-2 text-gray-500 dark:text-gray-400`}>
-                                        {category}
-                                    </h3>
-                                    <div className="space-y-1">
-                                        {sessionsInCategory.map((session) => (
-                                            <button
-                                                key={session.id}
-                                                className={`w-full text-left p-2 rounded-lg group 
-                                                hover:bg-gray-100 text-gray-700 hover:text-gray-900
-                                                dark:hover:bg-gray-800 dark:text-gray-300 dark:hover:text-white
-                                            `}
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <MessageSquare size={14} className="flex-shrink-0" />
-                                                    <span className="text-sm truncate">{session.title}</span>
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
+                <Chats />
 
                 <UserProfile />
             </div>
@@ -171,4 +127,107 @@ function UserProfile() {
             </a>
         </div>
     </div>
+}
+
+function Chats() {
+    const route = useRoute();
+    const groupedChats = useGroupedChats();
+
+    return <>
+        {/* Search */}
+        <div className="p-4">
+            <div className="relative">
+                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400`} />
+                <input
+                    type="text"
+                    placeholder="Search your threads..."
+                    className={`w-full pl-10 pr-4 py-2 rounded-lg text-sm 
+                            bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500 focus:border-gray-300
+                            dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-gray-600
+                            border focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                />
+            </div>
+        </div>
+
+        {/* Chat Sessions */}
+        <div className="flex-1 overflow-y-auto">
+            <div className="px-4 pb-4">
+                {groupedChats.value === null ? <div className="mb-6">
+                    <h3 className={`text-xs font-medium mb-2 px-2 text-gray-500 dark:text-gray-400`}>
+                        No chats yet.
+                    </h3>
+                </div>
+                    : Object.entries(groupedChats.value).map(([group, chats]) => {
+                        if (chats.length === 0) return null;
+
+                        return (
+                            <div key={group} className="mb-6">
+                                <h3 className={`text-xs font-medium mb-2 px-2 text-gray-500 dark:text-gray-400`}>
+                                    {group}
+                                </h3>
+                                <div className="space-y-1">
+                                    {chats.map((chat) => (
+                                        <a
+                                            href={`/chat/${chat.object.chatId}`}
+                                            key={chat.id}
+                                            class="w-full text-left text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                                        >
+                                            <div class={`mb-[2px] hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-lg ${route.path.startsWith('/chat/') && route.params.id === chat.object.chatId ? 'bg-gray-100 dark:bg-gray-800' : ''}`}>
+                                                <div className="flex items-center gap-2">
+                                                    <MessageSquare size={14} className="flex-shrink-0" />
+                                                    <span className="text-sm truncate">{chat.object.title}</span>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })}
+            </div>
+        </div>
+    </>
+}
+
+function useGroupedChats() {
+    const chats = useChats();
+    return useComputed(() => {
+        if (chats.value.length === 0) return null;
+
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+
+        const last7DaysStart = new Date(today);
+        last7DaysStart.setDate(today.getDate() - 7);
+
+        const last30DaysStart = new Date(today);
+        last30DaysStart.setDate(today.getDate() - 30);
+
+        const grouped: Record<string, typeof chats.value[number][]> = {
+            Today: [],
+            Yesterday: [],
+            'Last 7 days': [],
+            'Last 30 days': [],
+            Older: []
+        };
+
+        chats.value.forEach((chat) => {
+            const date = new Date(chat.object.createdAt);
+
+            if (date.toDateString() === today.toDateString()) {
+                grouped.Today.push(chat);
+            } else if (date.toDateString() === yesterday.toDateString()) {
+                grouped.Yesterday.push(chat);
+            } else if (date >= last7DaysStart) {
+                grouped['Last 7 days'].push(chat);
+            } else if (date >= last30DaysStart) {
+                grouped['Last 30 days'].push(chat);
+            } else {
+                grouped.Older.push(chat);
+            }
+        });
+
+        return grouped;
+    });
 }
