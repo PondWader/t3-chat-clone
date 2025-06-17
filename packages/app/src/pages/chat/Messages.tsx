@@ -5,6 +5,7 @@ import { account, chatMessage } from "@t3-chat-clone/stores";
 import { Signal } from "@preact/signals";
 import { useAccount, useDB } from "../../db";
 import Avatar from "../../icons/Avatar";
+import Markdown from "../../components/Markdown";
 
 export default function Messages(props: { messages: Signal<ObjectInstance<storeObject<typeof chatMessage>>[]> }) {
     const account = useAccount();
@@ -74,7 +75,7 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
                 {/* Message Bubble */}
                 <div className={`rounded-2xl px-4 py-3 min-w-0 bg-white text-gray-900 border border-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:border-transparent`}>
                     <div className="text-sm leading-relaxed whitespace-pre-wrap overflow-hidden break-words overflow-wrap-anywhere">
-                        {props.msg.content}
+                        <Markdown>{props.msg.content}</Markdown>
                     </div>
 
                     {/* Message Actions */}
