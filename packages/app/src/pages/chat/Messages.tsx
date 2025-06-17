@@ -13,7 +13,7 @@ export default function Messages(props: { messages: Signal<ObjectInstance<storeO
     const lastMsg = props.messages.value[props.messages.value.length - 1];
     const isLoading = lastMsg.object.role === "user" && !lastMsg.object.error;
 
-    return <div className="flex-1 overflow-y-auto p-6">
+    return <div className="flex-1 overflow-y-auto p-6 flex-col-reverse" id="messages-display">
         <div className="max-w-[90vw] lg:max-w-[min(56rem,70vw)] mx-auto space-y-6">
             {props.messages.value.map((msg, i) => (
                 <Message account={account} msg={msg.object} id={msg.id} isLastMsg={i + 1 === props.messages.value.length} />
@@ -74,7 +74,7 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
 
                 {/* Message Bubble */}
                 <div className={`rounded-2xl px-4 py-3 min-w-0 bg-white text-gray-900 border border-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:border-transparent`}>
-                    <div className="text-sm leading-relaxed whitespace-pre-wrap overflow-hidden break-words overflow-wrap-anywhere">
+                    <div className="text-sm leading-relaxeds overflow-hidden break-words overflow-wrap-anywhere">
                         <Markdown>{props.msg.content}</Markdown>
                     </div>
 

@@ -3,10 +3,15 @@ import { Action, Event, Store } from "../index.js";
 import { cleanRecord, connect, createMetaTables, createStoreTable, DatabaseDriverConn } from "./database.js";
 import { createWsBinding } from "./websocket.js";
 import { UserQueue } from "./UserQueue.js";
-import { createEventSource } from "../shared/events.js";
+import { createEventSource, EventSource } from "../shared/events.js";
 
 export type Subscription = {
     unsubscribe(): void
+}
+
+export type PartialStream<T> = {
+    update(obj: T): void
+    final(obj: T): void
 }
 
 export type Database = {
@@ -17,9 +22,10 @@ export type Database = {
     bindWebSocket(): WebSocketHandler<{ user: string; }>
     getSafeTableName(tableName: string): string
 
-    push<T>(store: Store<T>, user: string, object: T, msgId?: string): Promise<void>
+    push<T>(store: Store<T>, user: string, object: T, msgId?: string, id?: string): Promise<void>
     remove(store: Store<any>, user: string, objectId: string, msgId?: string): void
     getAll<T>(store: Store<T>, user: string, key: keyof T, value: string): Promise<T[]>
+    partial<T>(store: Store<T>, user: string): PartialStream<T>
 }
 
 export type CreateDatabaseOptions = {
@@ -49,12 +55,12 @@ export async function createDatabase(opts: CreateDatabaseOptions): Promise<Datab
         getSafeTableName(tableName) {
             return '$' + tableName;
         },
-        push(store, user, object, msgId) {
+        push(store, user, object, msgId, id) {
             if (!this.stores.has(store.name)) throw new Error(`Store "${store.name}" is not registered in the database.`);
             store.validate(object);
 
             return userQueue.syncUserAction(user, async () => {
-                let id = Bun.randomUUIDv7();
+                id = id ?? Bun.randomUUIDv7();
 
                 if (store.type === 'singular') {
                     const existing = await dbConn.query(store.name, {
@@ -86,7 +92,7 @@ export async function createDatabase(opts: CreateDatabaseOptions): Promise<Datab
                 eventSource.publish(store, {
                     action: 'push',
                     user,
-                    id,
+                    id: id as string,
                     object,
                     msgId
                 })
@@ -129,5 +135,26 @@ export async function createDatabase(opts: CreateDatabaseOptions): Promise<Datab
         async getAll(store, user, key, value) {
             return [];
         },
+        partial(store, user) {
+            return createPartialStream(this, eventSource, store, user)
+        }
     };
+}
+
+function createPartialStream<T>(db: Database, eventSource: EventSource, store: Store<T>, user: string): PartialStream<T> {
+    const id = Bun.randomUUIDv7();
+
+    return {
+        update(object) {
+            eventSource.publish(store, {
+                action: 'partial',
+                user,
+                id,
+                object
+            })
+        },
+        final(object) {
+            db.push(store, user, object, undefined, id);
+        },
+    }
 }

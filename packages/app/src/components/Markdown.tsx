@@ -21,7 +21,7 @@ export default function Markdown(props: { children: string }) {
     }}></span>
 }
 
-const highlightedLangs = ["py", "python", "js", "javasript", "typescript", "ts", "go", "golang", "java", "jsx", "tsx", "json", "c", "cpp", "ruby", "php", "bash", "sql", "html", "css"];
+const highlightedLangs = ["py", "python", "js", "javasript", "typescript", "ts", "go", "golang", "java", "jsx", "tsx", "json", "c", "cpp", "ruby", "php", "bash", "sql", "html", "css", "rust", "zig", "elixir", "kotlin", "swift"];
 
 const highlightTheme = {
     var: "text-blue-500",
@@ -51,7 +51,7 @@ function highlight(code: string, lang: string) {
     let currentIdent = '';
     for (const c of code) {
         if (isString) {
-            out += c;
+            out += htmlEscape(c);
             if (c === stringQuote) {
                 out += `</span>`;
                 isString = false;
@@ -68,16 +68,16 @@ function highlight(code: string, lang: string) {
             isNumber = true;
         } else {
             if (isNumber) {
-                out += `<span class="${highlightTheme.number}">${currentIdent}</span>`
+                out += `<span class="${highlightTheme.number}">${htmlEscape(currentIdent)}</span>`
             } else {
                 if (varKeywords.includes(currentIdent))
-                    out += `<span class="${highlightTheme.var}">${currentIdent}</span>`
+                    out += `<span class="${highlightTheme.var}">${htmlEscape(currentIdent)}</span>`
                 else if (funcKeywords.includes(currentIdent))
-                    out += `<span class="${highlightTheme.func}">${currentIdent}</span>`
+                    out += `<span class="${highlightTheme.func}">${htmlEscape(currentIdent)}</span>`
                 else if (boolKeywords.includes(currentIdent))
-                    out += `<span class="${highlightTheme.bool}">${currentIdent}</span>`
+                    out += `<span class="${highlightTheme.bool}">${htmlEscape(currentIdent)}</span>`
                 else
-                    out += `<span class="${highlightTheme.ident}">${currentIdent}</span>`
+                    out += `<span class="${highlightTheme.ident}">${htmlEscape(currentIdent)}</span>`
             }
 
             if (stringQuotes.includes(c)) {
@@ -86,7 +86,7 @@ function highlight(code: string, lang: string) {
                 stringQuote = c;
             }
 
-            out += c;
+            out += htmlEscape(c);
             currentIdent = '';
         }
     }

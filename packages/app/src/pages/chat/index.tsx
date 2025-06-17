@@ -2,8 +2,8 @@ import { FunctionalComponent } from 'preact';
 import { Send, Sparkles, Book, Code, GraduationCap, Search, Paperclip, MessageSquareText } from 'lucide-preact';
 import GeminiIcon from "../../icons/Gemini.tsx";
 import { ModelSelectionModal } from './ModelSelectionModal.tsx';
-import { useSignal } from '@preact/signals';
-import { useMemo, useRef } from 'preact/hooks';
+import { effect, useSignal } from '@preact/signals';
+import { useEffect, useMemo, useRef } from 'preact/hooks';
 import Sidebar from './Sidebar.tsx';
 import Examples from './Examples.tsx';
 import { useLocation, useRoute } from 'preact-iso';
@@ -32,6 +32,10 @@ function ChatInterface(props: { chatId: string, newChat: boolean }) {
 
 	const chat = useChat(props.chatId);
 
+	useEffect(() => {
+		scrollToBottomOfChat();
+	}, [])
+
 	const sendMessage = () => {
 		if (message.value.trim()) {
 			const pushResult = db.push(chatMessage, {
@@ -58,6 +62,7 @@ function ChatInterface(props: { chatId: string, newChat: boolean }) {
 				location.route(`/chat/${props.chatId}`);
 			}
 			message.value = '';
+			scrollToBottomOfChat();
 		}
 	};
 
@@ -191,4 +196,13 @@ function ChatControl(props: { name: string, icon: FunctionalComponent<{ size: nu
 		<props.icon size={12} />
 		<span class="hidden lg:block">{props.name}</span>
 	</button>
+}
+
+function scrollToBottomOfChat() {
+	setTimeout(() => {
+		const messagesDisplay = document.getElementById('messages-display') as HTMLDivElement;
+		if (messagesDisplay) {
+			messagesDisplay.scrollTop = messagesDisplay.scrollHeight
+		}
+	}, 0)
 }

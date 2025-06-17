@@ -2,7 +2,7 @@ import { Client, createClient } from "@t3-chat-clone/db/client";
 import { account, chat, chatMessage } from "@t3-chat-clone/stores";
 import { ComponentChild, createContext } from "preact";
 import { useContext, useEffect, useMemo } from "preact/hooks";
-import { useSignal, signal, useComputed } from "@preact/signals";
+import { useSignal, signal, useComputed, computed } from "@preact/signals";
 import type { storeObject, ObjectInstance } from "@t3-chat-clone/db";
 
 const DBContext = createContext<Client | null>(null);
@@ -14,7 +14,6 @@ export function useDB(): Client {
 export function useChat(chatId: string) {
     const db = useDB();
     const history = useMemo(() => signal<Map<string, ObjectInstance<storeObject<typeof chatMessage>>>>(new Map()), [chatId]);
-    const sig = useMemo(() => signal([]), [chatId]);
 
     useEffect(() => {
         db.getAllMatches(chatMessage, 'chatId', chatId)
@@ -29,7 +28,7 @@ export function useChat(chatId: string) {
         const sub = db.subscribe(chatMessage, (e) => {
             if (e.action === 'clear') return history.value = new Map();
             if (e.object.chatId !== chatId) return;
-            if (e.action === 'push') {
+            if (e.action === 'push' || e.action === 'partial') {
                 history.value.set(e.id, e);
             } else if (e.action === 'remove') {
                 history.value.delete(e.id);
@@ -40,10 +39,10 @@ export function useChat(chatId: string) {
         return () => sub.unsubscribe();
     }, [chatId]);
 
-    return useComputed(() =>
+    return useMemo(() => computed(() =>
         [...history.value.values()]
             .sort((a, b) => a.object.createdAt - b.object.createdAt)
-    );
+    ), [chatId]);
 }
 
 export function useAccount() {

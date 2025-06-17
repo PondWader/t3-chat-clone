@@ -250,8 +250,19 @@ function bindConn(client: Client, eventSource: EventSource) {
             ack
         })
     })
-    client.conn.on('partial', data => {
+    client.conn.on('partial', (data, ack) => {
+        const store = client.stores.get(data.store);
+        if (!store) {
+            throw new Error(`Missing store ${data.store}.`);
+        }
 
+        eventSource.publish(store, {
+            action: "partial",
+            user: "",
+            id: data.id,
+            object: data.object,
+            ack
+        })
     })
 }
 
