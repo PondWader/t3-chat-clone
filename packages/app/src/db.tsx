@@ -3,7 +3,7 @@ import { account, chat, chatMessage } from "@t3-chat-clone/stores";
 import { ComponentChild, createContext } from "preact";
 import { useContext, useEffect, useMemo } from "preact/hooks";
 import { useSignal, signal, useComputed, computed } from "@preact/signals";
-import type { storeObject, ObjectInstance } from "@t3-chat-clone/db";
+import type { storeObject, ObjectInstance, Store } from "@t3-chat-clone/db";
 
 const DBContext = createContext<Client | null>(null);
 
@@ -12,37 +12,57 @@ export function useDB(): Client {
 }
 
 export function useChat(chatId: string) {
-    const db = useDB();
-    const history = useMemo(() => signal<Map<string, ObjectInstance<storeObject<typeof chatMessage>>>>(new Map()), [chatId]);
-
-    useEffect(() => {
-        db.getAllMatches(chatMessage, 'chatId', chatId)
-            .then(msgs => {
-                msgs.filter(m => m.object.chatId === chatId)
-                    .forEach(m => {
-                        history.value.set(m.id, m);
-                    });
-                history.value = new Map(history.value);
-            })
-
-        const sub = db.subscribe(chatMessage, (e) => {
-            if (e.action === 'clear') return history.value = new Map();
-            if (e.object.chatId !== chatId) return;
-            if (e.action === 'push' || e.action === 'partial') {
-                history.value.set(e.id, e);
-            } else if (e.action === 'remove') {
-                history.value.delete(e.id);
-            }
-            history.value = new Map(history.value);
-        })
-
-        return () => sub.unsubscribe();
-    }, [chatId]);
+    const history = useStore(chatMessage, "chatId", chatId)
 
     return useMemo(() => computed(() =>
         [...history.value.values()]
             .sort((a, b) => a.object.createdAt - b.object.createdAt)
     ), [chatId]);
+}
+
+export function useChats() {
+    return useStore(chat);
+}
+
+export function useStore<T>(store: Store<T>, key?: keyof T, value?: any) {
+    const db = useDB();
+    const items = useMemo(() => signal<Map<string, ObjectInstance<T>>>(new Map()), [store, key, value]);
+
+    useEffect(() => {
+        if (key) {
+            db.getAllMatches(store, key, value)
+                .then(objects => {
+                    objects.filter(m => m.object[key] === value)
+                        .forEach(m => {
+                            items.value.set(m.id, m);
+                        });
+                    items.value = new Map(items.value);
+                })
+        } else {
+            db.getAll(store)
+                .then(objects => {
+                    objects.forEach(m => {
+                        items.value.set(m.id, m);
+                    });
+                    items.value = new Map(items.value);
+                })
+        }
+
+        const sub = db.subscribe(store, (e) => {
+            if (e.action === 'clear') return items.value = new Map();
+            if (key && e.object[key] !== value) return;
+            if (e.action === 'push' || e.action === 'partial') {
+                items.value.set(e.id, e);
+            } else if (e.action === 'remove') {
+                items.value.delete(e.id);
+            }
+            items.value = new Map(items.value);
+        })
+
+        return () => sub.unsubscribe();
+    }, [store, key, value]);
+
+    return items;
 }
 
 export function useAccount() {

@@ -133,7 +133,7 @@ export async function createDatabase(opts: CreateDatabaseOptions): Promise<Datab
             })
         },
         async getAll<T>(store: Store<T>, user: string, key: keyof T, value: any) {
-            const records = await dbConn.queryAll(store.name, { $userId: user, [key]: value }) as T[]
+            const records = await dbConn.queryAll(store.name, { $userId: user, [key]: value }, { $id: "asc" }) as T[]
             return records.map((r: any) => {
                 const id = r.$id;
                 cleanRecord(r);

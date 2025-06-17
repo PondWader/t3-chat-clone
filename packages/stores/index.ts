@@ -20,8 +20,13 @@ export const chat = createStore({
     type: 'event',
     schema: z.object({
         chatId: z.string(),
-        title: z.string().nullable()
-    })
+        title: z.string().nullable(),
+        createdAt: z.int()
+    }),
+    indices: ['chatId'],
+    validateClientAction(action, object) {
+        return false;
+    },
 })
 
 export const chatMessage = createStore({
