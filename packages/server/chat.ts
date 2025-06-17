@@ -5,11 +5,15 @@ import { chat, chatMessage } from "@t3-chat-clone/stores";
 import { Database } from "@t3-chat-clone/db/server";
 import { CoreMessage, streamText } from "ai";
 
+const SUPPORTED_GROQ_MODELS = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'qwen-qwq-32b']
+
 const titleModel = groq('llama-3.1-8b-instant');
 
 const BUFFER_MS = 20;
 
 export async function handleMessage(db: Database, id: string, user: string, object: storeObject<typeof chatMessage>) {
+    if (!SUPPORTED_GROQ_MODELS.includes(object.model)) return;
+
     const history = await db.getAll(chatMessage, user, "chatId", object.chatId)
     const messages: CoreMessage[] = [];
     for (const msg of history) {
@@ -24,7 +28,7 @@ export async function handleMessage(db: Database, id: string, user: string, obje
     }
 
     const { textStream } = streamText({
-        model: groq('llama-3.1-8b-instant'),
+        model: groq(object.model),
         messages
     });
 

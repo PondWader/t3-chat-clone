@@ -2,7 +2,7 @@ import { FunctionalComponent } from 'preact';
 import { Send, Search, Paperclip, MessageSquareText } from 'lucide-preact';
 import GeminiIcon from "../../icons/Gemini.tsx";
 import { ModelSelectionModal } from './ModelSelectionModal.tsx';
-import { useSignal } from '@preact/signals';
+import { useSignal, useSignalEffect } from '@preact/signals';
 import { useCallback, useEffect, useMemo, useRef } from 'preact/hooks';
 import Sidebar from './Sidebar.tsx';
 import Examples from './Examples.tsx';
@@ -11,6 +11,7 @@ import { useChat, useDB } from '../../db.tsx';
 import { chatMessage } from '@t3-chat-clone/stores';
 import Messages from './Messages.tsx';
 import { SyncTimeoutError } from '../../../../db/client/Connection.ts';
+import { Model, models } from '../../models.ts';
 
 export function Chat() {
 	return <div className={`overflow-y-hidden flex h-dvh font-sans bg-gray-50 dark:bg-gray-900`}>
@@ -24,9 +25,13 @@ function ChatInterface() {
 	const location = useLocation();
 	const message = useSignal('');
 	const isModelModalOpen = useSignal(false);
-	const selectedModel = useSignal('gemini-2.5-flash');
+	const selectedModel = useSignal(models.find(m => m.id === localStorage.getItem('selected_model_id')) ?? models.find(m => m.id === 'llama-3.1-8b-instant')!);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const db = useDB();
+
+	useSignalEffect(() => {
+		localStorage.setItem('selected_model_id', selectedModel.value.id);
+	})
 
 	const chat = useChat(route.params.id ?? null);
 
@@ -42,7 +47,7 @@ function ChatInterface() {
 				chatId: msgChatId,
 				role: 'user',
 				content: msg,
-				model: selectedModel.value,
+				model: selectedModel.value.id,
 				error: null,
 				createdAt: Date.now()
 			})
@@ -73,21 +78,9 @@ function ChatInterface() {
 		}
 	};
 
-	const handleModelSelect = (modelId: string) => {
-		selectedModel.value = modelId;
+	const handleModelSelect = (model: Model) => {
+		selectedModel.value = model;
 		isModelModalOpen.value = false;
-	};
-
-	const getModelDisplayName = (modelId: string) => {
-		const modelMap: { [key: string]: string } = {
-			'gemini-2.5-flash': 'Gemini 2.5 Flash',
-			'gemini-2.5-pro': 'Gemini 2.5 Pro',
-			'gpt-4o': 'GPT 4o',
-			'gpt-4o-mini': 'GPT 4o-mini',
-			'claude-4-sonnet': 'Claude 4 Sonnet',
-			// Add more mappings as needed
-		};
-		return modelMap[modelId] || 'Gemini 2.5 Flash';
 	};
 
 	// Auto-resize textarea
@@ -173,8 +166,8 @@ function ChatInterface() {
 									dark:bg-gradient-to-r dark:from-purple-900 dark:to-purple-600 dark:border-purple-800 dark:border-2 dark:hover:from-purple-800 dark:hover:to-purple-500 dark:text-gray-300 dark:hover:text-white
 								`}
 							>
-								<GeminiIcon height={16} width={16} />
-								<span className="ml-sm">{getModelDisplayName(selectedModel.value)}</span>
+								<selectedModel.value.icon height={16} width={16} />
+								<span className="ml-sm">{selectedModel.value.name + ' ' + selectedModel.value.version}</span>
 							</button>
 							<ChatControl name="Search" icon={Search} />
 							<ChatControl name="Attach" icon={Paperclip} />

@@ -42,9 +42,14 @@ export function createClient(opts: CreateClientOptions): Client {
         }, timeoutMs),
         db: new PersistentStore(opts.dbName, opts.stores, err => {
             console.error('IndexedDB operation failed: ' + err.toString());
-            alert('An IndexedDB operation failed (check browser console for more information). Reloading page...');
             client.db.close();
-            window.location.reload();
+            // Attempt to delete the database before exiting so errors can be corrected
+            client.db.deleteDb()
+                .catch((err) => { })
+                .then(() => {
+                    alert('An IndexedDB operation failed (check browser console for more information). Reloading page...');
+                    window.location.reload();
+                });
         }),
         memory: new MemoryStore(),
 

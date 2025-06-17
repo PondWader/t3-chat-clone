@@ -104,7 +104,7 @@ function UserProfile() {
 
     return <div className="py-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
-            <a href="/login">
+            <a href={account.value ? "/settings/account" : "/login"}>
                 <div className="flex items-center gap-2 text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-900 rounded py-3 px-2 mx-2">
                     {account.value ?
                         account.value.avatarUrl ? <img class="rounded-full" width="40" height="40" src={account.value.avatarUrl} /> : <Avatar />
@@ -131,7 +131,8 @@ function UserProfile() {
 
 function Chats() {
     const route = useRoute();
-    const groupedChats = useGroupedChats();
+    const search = useSignal('');
+    const groupedChats = useGroupedChats(search);
 
     return <>
         {/* Search */}
@@ -139,6 +140,10 @@ function Chats() {
             <div className="relative">
                 <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400`} />
                 <input
+                    value={search.value}
+                    onInput={(e) => {
+                        search.value = (e.target! as HTMLInputElement).value;
+                    }}
                     type="text"
                     placeholder="Search your threads..."
                     className={`w-full pl-10 pr-4 py-2 rounded-lg text-sm 
@@ -189,9 +194,11 @@ function Chats() {
     </>
 }
 
-function useGroupedChats() {
+function useGroupedChats(search: Signal<string>) {
     const chats = useChats();
     return useComputed(() => {
+        // Access search value to ensure the computed value is subscribed to it
+        const searchStr = search.value;
         if (chats.value.length === 0) return null;
 
         const today = new Date();
@@ -213,6 +220,10 @@ function useGroupedChats() {
         };
 
         chats.value.forEach((chat) => {
+            if (!chat.object.title || !chat.object.title.toLowerCase().includes(searchStr.toLowerCase())) {
+                return;
+            }
+
             const date = new Date(chat.object.createdAt);
 
             if (date.toDateString() === today.toDateString()) {

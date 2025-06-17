@@ -6,12 +6,14 @@ import { Signal } from "@preact/signals";
 import { useAccount, useDB } from "../../db";
 import Avatar from "../../icons/Avatar";
 import Markdown from "../../components/Markdown";
+import { models } from "../../models";
 
 export default function Messages(props: { messages: Signal<ObjectInstance<storeObject<typeof chatMessage>>[]>, sendMessage: (msg: string) => void }) {
     const account = useAccount();
 
     const lastMsg = props.messages.value[props.messages.value.length - 1];
     const isLoading = lastMsg.object.role === "user" && !lastMsg.object.error;
+    const LoadingModelIcon = models.find(m => m.id === lastMsg.object.model)!.icon;
 
     return <div className="flex-1 overflow-y-auto p-6 flex-col-reverse" id="messages-display">
         <div className="max-w-[90vw] lg:max-w-[min(56rem,70vw)] mx-auto space-y-6 mb-[300px]">
@@ -25,7 +27,7 @@ export default function Messages(props: { messages: Signal<ObjectInstance<storeO
                     <div className="flex gap-3 max-w-[80%]">
                         {/* AI Avatar */}
                         <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-200 dark:bg-gray-700">
-                            <Gemini width={16} height={16} />
+                            <LoadingModelIcon width={16} height={16} />
                         </div>
 
                         {/* Loading Bubble */}
@@ -56,6 +58,7 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
     const db = useDB();
 
     const isUserMsg = props.msg.role === 'user';
+    const ModelIcon = models.find(m => m.id === props.msg.model)!.icon;
 
     return <>
         <div
@@ -68,7 +71,7 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
                     {isUserMsg ? (
                         props.account.value && props.account.value.avatarUrl ? <img class="rounded-full" width="40" height="40" src={props.account.value.avatarUrl ?? ''} /> : <Avatar />
                     ) : (
-                        <Gemini height={16} width={16} />
+                        <ModelIcon height={16} width={16} />
                     )}
                 </div>
 

@@ -19,11 +19,13 @@ export function useChat(chatId: string | null) {
     const history = useStore(chatMessage, "chatId", chatId, chatCache.get(chatId))
 
     return useMemo(() => computed(() => {
-        if (history.value.size < 128) {
+        if (history.value.size < 32) {
             if (chatCache.size > 5) {
                 chatCache.delete(chatCache.keys().next().value!)
             }
             chatCache.set(chatId, history.value);
+        } else {
+            chatCache.delete(chatId);
         }
 
         return [...history.value.values()]

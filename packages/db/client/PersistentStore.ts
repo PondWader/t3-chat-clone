@@ -3,6 +3,7 @@ import { Store } from "../index.js";
 export type PersistentStoreObject<T> = T & { $id: string };
 
 export class PersistentStore {
+    #dbName: string;
     #db?: IDBDatabase;
     #openQueue: (() => void)[] = [];
 
@@ -12,11 +13,12 @@ export class PersistentStore {
     #onError?: (err: any) => void
 
     constructor(dbName: string, stores: Store<any>[], onError?: (err: any) => void) {
+        this.#dbName = dbName;
         this.#onError = onError;
         const request = window.indexedDB.open(dbName, 1);
         request.onerror = (event) => {
             console.error(`Failed to open IndexedDB database: ${(event.target as any).error?.message}`);
-            alert("Failed to open IndexedDB database. This website will not behave as expected.");
+            if (onError) onError((event.target as any).error);
         };
         request.onsuccess = (event) => {
             this.#db = (event.target as any).result as IDBDatabase;
@@ -30,6 +32,14 @@ export class PersistentStore {
             const db = (event.target as any).result as IDBDatabase;
             this.#init(db, stores);
         }
+    }
+
+    deleteDb() {
+        return new Promise<void>((resolve, reject) => {
+            const res = indexedDB.deleteDatabase(this.#dbName);
+            res.onsuccess = () => resolve();
+            res.onerror = (e) => reject(e);
+        })
     }
 
     #init(db: IDBDatabase, stores: Store<any>[]) {

@@ -64,8 +64,12 @@ function getSecureState() {
 
     const buf = new Uint8Array(16);
     crypto.getRandomValues(buf);
-    const state = buf.toHex();
+    const state = bufToHex(buf);
 
     localStorage.setItem('login_state', state);
     return state;
+}
+
+function bufToHex(b: Uint8Array) {
+    return new Array<number>(...b).map(v => v.toString(16).padStart(2, " ")).join('');
 }

@@ -1,166 +1,17 @@
 import { X, Search, Star, Eye, Globe, FileText, Zap, AlertTriangle } from 'lucide-preact';
-import GeminiIcon from '../../icons/Gemini';
-import GptIcon from '../../icons/GPT';
-import { FunctionalComponent } from 'preact';
 import { Signal, useComputed } from '@preact/signals';
-
-
-type ModelCard = {
-    id: string;
-    name: string;
-    version: string;
-    icon: FunctionalComponent<{ height: number, width: number }>;
-    isFavorite?: boolean;
-    capabilities: {
-        vision?: boolean;
-        web?: boolean;
-        files?: boolean;
-        speed?: boolean;
-        reasoning?: boolean;
-    };
-    isDisabled?: boolean;
-}
-
-const favoriteModels: ModelCard[] = [
-    {
-        id: 'gemini-2.5-flash',
-        name: 'Gemini',
-        version: '2.5 Flash',
-        icon: GeminiIcon,
-        isFavorite: true,
-        capabilities: { vision: true, web: true, files: true, speed: true }
-    },
-    {
-        id: 'gemini-2.5-pro',
-        name: 'Gemini',
-        version: '2.5 Pro',
-        icon: GeminiIcon,
-        capabilities: { vision: true, reasoning: true }
-    },
-    {
-        id: 'gpt-4o',
-        name: 'GPT',
-        version: '4o',
-        icon: GptIcon,
-        capabilities: { vision: true, reasoning: true }
-    },
-    {
-        id: 'gpt-4o-mini',
-        name: 'GPT',
-        version: '4o-mini',
-        icon: () => <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">G</div>,
-        capabilities: { speed: true }
-    },
-    {
-        id: 'claude-4-sonnet',
-        name: 'Claude',
-        version: '4 Sonnet',
-        icon: () => <div className="w-6 h-6 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">C</div>,
-        capabilities: { reasoning: true, files: true }
-    },
-    {
-        id: 'claude-4-sonnet-reasoning',
-        name: 'Claude',
-        version: '4 Sonnet',
-        icon: () => <div className="w-6 h-6 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">C</div>,
-        capabilities: { reasoning: true, files: true },
-        isDisabled: true
-    },
-    {
-        id: 'deepseek-r1',
-        name: 'DeepSeek',
-        version: 'R1',
-        icon: () => <div className="w-6 h-6 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-bold">D</div>,
-        capabilities: { reasoning: true },
-        isDisabled: true
-    }
-];
-
-const otherModels: ModelCard[] = [
-    {
-        id: 'gemini-2.0-flash',
-        name: 'Gemini',
-        version: '2.0 Flash',
-        icon: GeminiIcon,
-        capabilities: { vision: true, web: true, files: true }
-    },
-    {
-        id: 'gemini-2.0-flash-lite',
-        name: 'Gemini',
-        version: '2.0 Flash Lite',
-        icon: GeminiIcon,
-        capabilities: { speed: true, files: true }
-    },
-    {
-        id: 'gemini-2.5-flash-thinking',
-        name: 'Gemini',
-        version: '2.5 Flash',
-        icon: GeminiIcon,
-        capabilities: { reasoning: true, web: true, files: true },
-        isDisabled: true
-    },
-    {
-        id: 'gpt-4o-mini-2',
-        name: 'GPT',
-        version: '4o-mini',
-        icon: () => <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">G</div>,
-        capabilities: { vision: true }
-    },
-    {
-        id: 'gpt-4o-2',
-        name: 'GPT',
-        version: '4o',
-        icon: () => <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">G</div>,
-        capabilities: { vision: true }
-    },
-    {
-        id: 'gpt-4.1',
-        name: 'GPT',
-        version: '4.1',
-        icon: () => <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">G</div>,
-        capabilities: { vision: true }
-    },
-    {
-        id: 'gpt-4.1-mini',
-        name: 'GPT',
-        version: '4.1 Mini',
-        icon: () => <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">G</div>,
-        capabilities: { speed: true }
-    },
-    {
-        id: 'gpt-4.1-nano',
-        name: 'GPT',
-        version: '4.1 Nano',
-        icon: () => <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">G</div>,
-        capabilities: { vision: true }
-    },
-    {
-        id: 'o3-mini',
-        name: 'o3',
-        version: 'mini',
-        icon: () => <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">o3</div>,
-        capabilities: { reasoning: true }
-    },
-    {
-        id: 'o3',
-        name: 'o3',
-        version: '',
-        icon: () => <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">o3</div>,
-        capabilities: { reasoning: true },
-        isDisabled: true
-    }
-];
+import { Model, models } from '../../models';
 
 function ModelCard(props: {
-    model: ModelCard;
+    model: Model;
     isSelected: boolean;
     onClick: () => void;
 }) {
     return (
         <button
             onClick={props.onClick}
-            disabled={props.model.isDisabled}
-            className={`relative p-4 rounded-lg border-2 text-left w-full ${props.model.isDisabled
+            disabled={props.model.requiresOpenRouterKey}
+            className={`relative p-4 rounded-lg border-2 text-left w-full ${props.model.requiresOpenRouterKey
                 ? `
                   bg-gray-100/50 border-gray-200 opacity-50 cursor-not-allowed
                     dark:bg-gray-800/50 dark:border-gray-700 dark:opacity-50
@@ -178,7 +29,7 @@ function ModelCard(props: {
             )}
 
             <div className="flex items-center gap-3 mb-3">
-                <props.model.icon height={22} width={22} />
+                <props.model.icon height={26} width={26} />
                 <div>
                     <div className={`font-semibold text-sm text-gray-900 dark:text-white`}>
                         {props.model.name}
@@ -190,10 +41,10 @@ function ModelCard(props: {
             </div>
 
             <div className="flex gap-2 flex-wrap">
-                {props.model.capabilities.vision && (
+                {props.model.capabilities.images && (
                     <Eye size={14} className="text-gray-500 dark:text-gray-400" />
                 )}
-                {props.model.capabilities.web && (
+                {props.model.capabilities.search && (
                     <Globe size={14} className="text-gray-500 dark:text-gray-400" />
                 )}
                 {props.model.capabilities.files && (
@@ -217,9 +68,9 @@ export function ModelSelectionModal({
     onSelectModel
 }: {
     isOpen: Signal<boolean>;
-    selectedModel: Signal<string>;
+    selectedModel: Signal<Model>;
     onClose: () => void;
-    onSelectModel: (model: string) => void;
+    onSelectModel: (model: Model) => void;
 }) {
     const wrapperClassName = useComputed(() => `fixed inset-0 z-50 flex items-center justify-center ${isOpen.value ? '' : 'hidden'}`);
 
@@ -270,18 +121,17 @@ export function ModelSelectionModal({
                     {/* Favorites Section */}
                     <div className="mb-8">
                         <div className="flex items-center gap-2 mb-4">
-                            <Star size={16} className="text-yellow-500 fill-current" />
                             <h3 className={`text-sm font-medium text-gray-700 dark:text-gray-300`}>
-                                Favorites
+                                Available Models
                             </h3>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                            {favoriteModels.map((model) => (
+                            {models.map((model) => (
                                 <ModelCard
                                     key={model.id}
                                     model={model}
-                                    isSelected={selectedModel.value === model.id}
-                                    onClick={() => onSelectModel(model.id)}
+                                    isSelected={selectedModel.value === model}
+                                    onClick={() => onSelectModel(model)}
                                 />
                             ))}
                         </div>
@@ -290,15 +140,15 @@ export function ModelSelectionModal({
                     {/* Others Section */}
                     <div>
                         <h3 className={`text-sm font-medium mb-4 text-gray-700 dark:text-gray-300`}>
-                            Others
+                            Require OpenRouter key in settings
                         </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-                            {otherModels.map((model) => (
+                            {([] as Model[]).map((model) => (
                                 <ModelCard
                                     key={model.id}
                                     model={model}
-                                    isSelected={selectedModel.value === model.id}
-                                    onClick={() => onSelectModel(model.id)}
+                                    isSelected={selectedModel.value === model}
+                                    onClick={() => onSelectModel(model)}
                                 />
                             ))}
                         </div>
