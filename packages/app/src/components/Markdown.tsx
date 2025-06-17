@@ -1,5 +1,6 @@
 import { Renderer, Marked } from "marked";
 import { markedHighlight } from "marked-highlight";
+import { useMemo } from "preact/hooks";
 
 // Escape all HTML
 Renderer.prototype.html = function ({ text }) {
@@ -8,16 +9,12 @@ Renderer.prototype.html = function ({ text }) {
 
 const marked = new Marked(
     markedHighlight({
-        emptyLangClass: 'hljs',
-        langPrefix: 'hljs language-',
-        highlight(code, lang, info) {
-            return highlight(code, lang);
-        }
+        highlight
     })
 );
 
 export default function Markdown(props: { children: string }) {
-    const markdown = marked.parse(props.children) as string // useMemo(() => marked(props.children.replace(/</g, "\\<")), [props.children]) as string;
+    const markdown = useMemo(() => marked.parse(props.children) as string, [props.children]);
 
     return <span class="prose dark:prose-invert" dangerouslySetInnerHTML={{
         __html: markdown.trim()
