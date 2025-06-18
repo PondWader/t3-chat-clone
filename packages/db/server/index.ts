@@ -81,12 +81,23 @@ export async function createDatabase(opts: CreateDatabaseOptions): Promise<Datab
                         })
                     }
                 } else {
-                    await dbConn.create(store.name, {
-                        ...object as any,
-                        $id: id,
+                    const existing = await dbConn.query(store.name, {
                         $userId: user,
-                        $deleted: 0
-                    })
+                        $id: id
+                    }) as any
+                    if (existing !== null) {
+                        await dbConn.update(store.name, {
+                            $id: existing.$id,
+                            $userId: user
+                        }, { ...object as any })
+                    } else {
+                        await dbConn.create(store.name, {
+                            ...object as any,
+                            $id: id,
+                            $userId: user,
+                            $deleted: 0
+                        })
+                    }
                 }
 
                 eventSource.publish(store, {

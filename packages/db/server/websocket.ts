@@ -55,10 +55,12 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
         db.push(store, user, data.object, msgId);
     }
 
-    function handleRemove(user: string, data: RemoveData, msgId?: string) {
+    async function handleRemove(user: string, data: RemoveData, msgId?: string) {
         const store = db.stores.get(data.store);
         if (store === undefined) return;
-        if (!store.validateClientActionSafe("push", data)) return;
+        const obj = await db.getAll(store, user, "$id", data.id);
+        if (obj.length === 0) return;
+        if (!store.validateClientActionSafe("remove", obj[0].object)) return;
 
         db.remove(store, user, data.id, msgId);
     }

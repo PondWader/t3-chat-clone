@@ -62,7 +62,7 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
     const ModelIcon = getModelIcon(props.msg.model);
 
     return <>
-        <div
+        {(props.msg.content || !props.msg.error) && <div
             key={props.id}
             className={`flex ${isUserMsg ? 'justify-end' : 'justify-start'}`}
         >
@@ -98,15 +98,15 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
                     )}
                 </div>
             </div>
-        </div >
-        {props.msg.error && isUserMsg && <div className="flex justify-center">
+        </div>}
+        {props.msg.error && <div className="flex justify-center">
             <div className={`flex items-center gap-3 px-4 py-3 rounded-lg
                 bg-red-50 border border-red-200 text-red-700 
                 dark:bg-red-900/20 dark:border dark:border-red-800/30 dark:text-red-400
             `}>
                 <AlertCircle size={16} className="flex-shrink-0" />
                 <span className="text-sm">{props.msg.error}</span>
-                <button onClick={() => {
+                {isUserMsg && <button onClick={() => {
                     db.remove(chatMessage, props.id);
                     props.sendMessage(props.msg.content);
                 }}
@@ -116,7 +116,7 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
                     `}
                 >
                     Retry
-                </button>
+                </button>}
             </div>
         </div>}
     </>

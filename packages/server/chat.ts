@@ -1,6 +1,6 @@
 import { groq } from "@ai-sdk/groq";
 import { storeObject } from "@t3-chat-clone/db";
-import { generateText, LanguageModelV1 } from "ai";
+import { APICallError, generateText, LanguageModelV1 } from "ai";
 import { chat, chatMessage, settings } from "@t3-chat-clone/stores";
 import { Database } from "@t3-chat-clone/db/server";
 import { CoreMessage, streamText } from "ai";
@@ -13,11 +13,17 @@ const BUFFER_MS = 20;
 
 export async function handleMessage(db: Database, id: string, user: string, object: storeObject<typeof chatMessage>) {
     let model: LanguageModelV1;
+    let isByok = false;
     if (supportedGroqModels.includes(object.model)) {
         model = groq(object.model);
     } else {
+        isByok = true;
         const byok = await loadByokModel(db, user, object.model);
         if (typeof byok.error === 'string') {
+            await db.push(chatMessage, user, {
+                ...object,
+                error: byok.error
+            }, undefined, id)
             return;
         }
         model = byok.instance;
@@ -36,10 +42,16 @@ export async function handleMessage(db: Database, id: string, user: string, obje
         createNewChat(db, user, object.chatId, object.content);
     }
 
+    let error: string | null = null;
     const { textStream } = streamText({
         model,
         messages,
         onError: (err) => {
+            if (err.error instanceof APICallError) {
+                error = 'OpenRouter API key is invalid.';
+                return;
+            }
+            error = 'An unexpected error occured. Try again.'
             console.error(err);
         }
     });
@@ -58,7 +70,7 @@ export async function handleMessage(db: Database, id: string, user: string, obje
                 content: msg,
                 model: object.model,
                 createdAt: date,
-                error: null
+                error
             })
             lastUpdate = Date.now();
         }
@@ -69,7 +81,7 @@ export async function handleMessage(db: Database, id: string, user: string, obje
         content: msg,
         model: object.model,
         createdAt: date,
-        error: null
+        error
     })
 }
 

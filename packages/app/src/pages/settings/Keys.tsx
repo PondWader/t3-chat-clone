@@ -28,9 +28,17 @@ export default function KeySettings() {
     }
 
     const handleDeleteApiKey = () => {
+        const key = currentSettings.value.openRouterKey;
         db.push(settings, {
             openRouterKey: null
         })
+            .catch(err => {
+                console.error(`Error removing API key: ${err}`);
+                // Rollback
+                db.push(settings, {
+                    openRouterKey: key
+                }).catch(() => { })
+            })
     };
 
     const toggleKeyVisibility = () => {
