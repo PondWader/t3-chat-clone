@@ -1,10 +1,10 @@
-import { useSignal } from "@preact/signals"
+import { signal } from "@preact/signals"
 import Sidebar from "./Sidebar";
 import { ChatInterface } from ".";
 import { useLocation, useRoute } from "preact-iso";
 import { ObjectInstance, storeObject } from "@t3-chat-clone/db";
 import { chatMessage } from "@t3-chat-clone/stores";
-import { useEffect } from "preact/hooks";
+import { useEffect, useMemo } from "preact/hooks";
 
 export default function Shared() {
     const route = useRoute();
@@ -17,8 +17,8 @@ export default function Shared() {
 }
 
 function useShared(user: string, id: string) {
-    const chat = useSignal<ObjectInstance<storeObject<typeof chatMessage>>[]>([]);
-    const avatarUrl = useSignal<string>();
+    const chat = useMemo(() => signal<ObjectInstance<storeObject<typeof chatMessage>>[]>([]), [user, id]);
+    const avatarUrl = useMemo(() => signal<string>(), [user, id]);
     const location = useLocation();
 
     useEffect(() => {
