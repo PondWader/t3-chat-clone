@@ -27,17 +27,20 @@ export class Connection extends TypedEmitter<MessageEvents> {
         window.addEventListener('beforeunload', () => {
             this.destroy();
         })
+
+        this.on('server_ready', () => {
+            if (this.#ws!.readyState === WebSocket.OPEN) {
+                this.#connected = true;
+                this.#consumeWriteQueue();
+            }
+        })
     }
 
     #connect() {
         this.#ws = new WebSocket(this.#wsUrl);
 
         this.#ws.onopen = async () => {
-            this.#connected = true;
             await this.#clientHello();
-            if (this.#ws!.readyState === WebSocket.OPEN) {
-                this.#consumeWriteQueue();
-            }
         }
 
         this.#ws.onmessage = msg => {
@@ -56,11 +59,11 @@ export class Connection extends TypedEmitter<MessageEvents> {
         const ws = this.#ws;
         const clientHello = await this.#clientHelloHandler();
         // Ensure the open WebSocket is still the same
-        if (this.#connected && ws === this.#ws) {
-            this.send({
+        if (this.#ws!.readyState === WebSocket.OPEN && ws === this.#ws) {
+            this.#ws!.send(JSON.stringify({
                 type: "client_hello",
                 data: clientHello
-            })
+            }));
         }
     }
 
@@ -90,25 +93,26 @@ export class Connection extends TypedEmitter<MessageEvents> {
             return new Promise<void>((resolve, reject) => {
                 if (msg.msgId) {
                     this.#pendingMsgs.set(msg.msgId, resolve);
-                } else {
-                    resolve();
-                }
-
-                if (msg.msgId) {
                     setTimeout(() => {
                         this.#pendingMsgs.delete(msg.msgId!)
                         reject(SyncTimeoutError);
                     }, this.#timeoutMs);
+                } else {
+                    resolve();
                 }
             })
         } else {
             return new Promise<void>((resolve, reject) => {
                 this.#writeQueue.push({ msg: json, resolve });
 
-                setTimeout(() => {
-                    this.#writeQueue = this.#writeQueue.filter(v => v.resolve !== resolve)
-                    reject(SyncTimeoutError);
-                }, this.#timeoutMs);
+                if (msg.msgId) {
+                    setTimeout(() => {
+                        if (this.#writeQueue.some(v => v.resolve === resolve)) {
+                            this.#writeQueue = this.#writeQueue.filter(v => v.resolve !== resolve)
+                            reject(SyncTimeoutError);
+                        }
+                    }, this.#timeoutMs);
+                }
             })
         }
     }

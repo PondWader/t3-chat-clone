@@ -94,6 +94,7 @@ export function createWsBinding(db: Database): WebSocketHandler<ConnData> {
                     await syncStore(db, ws, store, status);
                 }
 
+                ws.send(JSON.stringify({ type: "server_ready", data: {} }))
                 ws.data.synced = true;
             } else if (ws.data.synced) {
                 if (msg.type === 'push') {

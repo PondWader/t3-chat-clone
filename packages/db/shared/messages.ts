@@ -1,9 +1,10 @@
 import { z } from "zod/v4";
 
-export type MessageType = "client_hello" | "push" | "remove" | "partial" | "clear"
+export type MessageType = "client_hello" | "server_ready" | "push" | "remove" | "partial" | "clear"
 
 export interface MessageDataMap {
     client_hello: ClientHelloData;
+    server_ready: {}
     push: PushData;
     remove: RemoveData;
     partial: PartialData;
