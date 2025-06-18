@@ -104,6 +104,31 @@ export function useAccount() {
     return signal;
 }
 
+export function useSettings() {
+    const db = useDB();
+    const signal = useSignal<storeObject<typeof settings>>({ openRouterKey: null });
+
+    useEffect(() => {
+        db.getAll(settings).then(acc => {
+            if (acc.length !== 0) {
+                signal.value = acc[0].object;
+            }
+        });
+
+        const sub = db.subscribe(settings, e => {
+            if (e.action === 'push') {
+                signal.value = e.object;
+            } else if (e.action === 'remove' || e.action === 'clear') {
+                signal.value = { openRouterKey: null };
+            }
+        })
+
+        return () => sub.unsubscribe();
+    }, []);
+
+    return signal;
+}
+
 export function DBProvider(props: { children: ComponentChild }) {
     const wsUrl = ((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.host + "/api/db/ws";
 

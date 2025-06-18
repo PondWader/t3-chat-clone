@@ -29,7 +29,10 @@ export async function handleMessage(db: Database, id: string, user: string, obje
 
     const { textStream } = streamText({
         model: groq(object.model),
-        messages
+        messages,
+        onError: (err) => {
+            console.error(err);
+        }
     });
 
     const stream = db.partial(chatMessage, user);

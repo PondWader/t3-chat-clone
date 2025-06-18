@@ -70,7 +70,7 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
                 {/* Avatar */}
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-200 dark:bg-gray-700`}>
                     {isUserMsg ? (
-                        props.account.value && props.account.value.avatarUrl ? <img class="rounded-full" width="40" height="40" src={props.account.value.avatarUrl ?? ''} /> : <Avatar />
+                        props.account.value && props.account.value.avatarUrl ? <img alt="user avatar" class="rounded-full" width="40" height="40" src={props.account.value.avatarUrl ?? ''} /> : <Avatar />
                     ) : (
                         <ModelIcon height={16} width={16} />
                     )}
