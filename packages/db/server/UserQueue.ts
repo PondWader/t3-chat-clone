@@ -1,9 +1,9 @@
-type Action = () => Promise<void> | void;
+type Action<T> = () => Promise<T> | T;
 
 export class UserQueue {
     #userQueues: Map<string, (() => void)[]> = new Map();
 
-    syncUserAction(user: string, action: Action): Promise<void> {
+    syncUserAction<T>(user: string, action: Action<T>): Promise<T> {
         return new Promise(async (resolve, reject) => {
             let userQueue = this.#userQueues.get(user)
             if (userQueue === undefined) {
@@ -14,8 +14,7 @@ export class UserQueue {
             }
 
             try {
-                await action();
-                resolve();
+                resolve(await action());
             } catch (err) {
                 reject(err);
             }

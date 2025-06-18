@@ -8,8 +8,8 @@ const server = Bun.serve({
         "/api/auth/login": { POST: authHandler.login },
         "/api/auth/logout": { POST: authHandler.logout },
         "/api/auth/url": async (req) => Response.json(await authHandler.getAuthUrls(new URL(req.url).searchParams.get('state') ?? '')),
-        "/api/link": linkHandler.link,
-        "/api/link/generate": linkHandler.createSyncLink,
+        "/api/link": { POST: linkHandler.link },
+        "/api/link/generate": { POST: linkHandler.createSyncLink },
         "/api/db/ws": {
             GET: async (req, server) => {
                 const { uuid, newCookies } = await authHandler.auth(req);

@@ -76,6 +76,7 @@ export default function KeySettings() {
                     <div>
                         <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">API Key</label>
                         <input
+                            autoComplete="off"
                             type="password"
                             value={newApiKey.value}
                             onInput={(e) => newApiKey.value = (e.target as any).value}

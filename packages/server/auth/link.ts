@@ -34,8 +34,14 @@ export async function createLinkHandler(authHandler: AuthHandler, db: Database) 
             const link = await db.dbConn.query(tableName, { code: syncCode }) as any | null;
             if (link === null) return Response.json({
                 error: true,
-                message: 'Code not found.'
+                message: 'Sync link invalid. Try generating a new one.'
             }, { status: 404 });
+            if (link.expiresAt < Date.now()) {
+                return Response.json({
+                    error: true,
+                    message: 'Sync link has expired. Try generating a new one.'
+                }, { status: 404 })
+            }
 
             const newCookies = authHandler.setGuest(link.userId);
 
@@ -51,7 +57,7 @@ export async function createLinkHandler(authHandler: AuthHandler, db: Database) 
             if (!authStatus.guest) {
                 return Response.json({
                     error: true,
-                    message: 'Only guests can use link syncing.'
+                    message: 'Logged in users cannot sync via links.'
                 }, { status: 403 })
             }
 

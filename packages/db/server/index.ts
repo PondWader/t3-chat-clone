@@ -22,7 +22,7 @@ export type Database = {
     bindWebSocket(): WebSocketHandler<{ user: string; }>
     getSafeTableName(tableName: string): string
 
-    push<T>(store: Store<T>, user: string, object: T, msgId?: string, id?: string): Promise<void>
+    push<T>(store: Store<T>, user: string, object: T, msgId?: string, id?: string): Promise<string>
     remove(store: Store<any>, user: string, objectId: string, msgId?: string): void
     getAll<T>(store: Store<T>, user: string, key?: keyof T, value?: any): Promise<ObjectInstance<T>[]>
     partial<T>(store: Store<T>, user: string): PartialStream<T>
@@ -102,6 +102,8 @@ export async function createDatabase(opts: CreateDatabaseOptions): Promise<Datab
                     object,
                     msgId
                 })
+
+                return id as string;
             })
         },
         remove(store, user, objectId, msgId) {

@@ -59,7 +59,12 @@ export async function handleMessage(db: Database, id: string, user: string, obje
     const stream = db.partial(chatMessage, user);
 
     let msg = '';
-    const date = Date.now();
+    // Ensure messages are never out of order
+    let date = Date.now();
+    if (date < object.createdAt) {
+        date = object.createdAt + 1;
+    }
+
     let lastUpdate = 0;
     for await (const textPart of textStream) {
         msg += textPart;
@@ -86,12 +91,18 @@ export async function handleMessage(db: Database, id: string, user: string, obje
 }
 
 async function createNewChat(db: Database, user: string, chatId: string, firstMessage: string) {
+    const createdAt = Date.now();
+    const id = await db.push(chat, user, {
+        chatId,
+        title: 'New Chat',
+        createdAt
+    })
     const title = await generateTitle(firstMessage);
     await db.push(chat, user, {
         chatId,
         title,
         createdAt: Date.now()
-    })
+    }, undefined, id)
 }
 
 async function generateTitle(message: string) {
