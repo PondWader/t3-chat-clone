@@ -29,11 +29,12 @@ export const chat = createStore({
     schema: z.object({
         chatId: z.string(),
         title: z.string().nullable(),
+        branch: z.int(),
         createdAt: z.int()
     }),
     indices: ['chatId'],
     validateClientAction(action, object) {
-        return false;
+        return action === "push" && object.branch === 1;
     },
 })
 
@@ -42,14 +43,12 @@ export const chatMessage = createStore({
     type: 'event',
     schema: z.object({
         chatId: z.string(),
+        copied: z.int(),
         role: z.string(),
         content: z.string(),
         model: z.string(),
         error: z.string().nullable(),
         createdAt: z.int()
     }),
-    indices: ["chatId"],
-    validateClientAction(action, obj) {
-        return action !== 'push' || obj.role === "user";
-    }
+    indices: ["chatId"]
 });

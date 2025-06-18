@@ -2,7 +2,7 @@ import type { ZodObject } from "zod/v4"
 import z from "zod/v4";
 import { MessageType } from "./shared/messages";
 
-export type Action = Exclude<MessageType, "client_hello">;
+export type Action = Exclude<Exclude<MessageType, "client_hello">, "server_ready">;
 
 export type ObjectInstance<T> = {
     id: string,

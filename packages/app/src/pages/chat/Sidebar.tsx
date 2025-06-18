@@ -1,4 +1,4 @@
-import { Plus, Search, MessageSquare, Settings, Moon, Sun, X, PanelLeftOpen, LogIn } from 'lucide-preact';
+import { Plus, Search, MessageSquare, Settings, Moon, Sun, X, PanelLeftOpen, LogIn, GitBranch } from 'lucide-preact';
 import { currentTheme, toggleTheme } from '../../theme';
 import { Signal, useComputed, useSignal } from '@preact/signals';
 import { useAccount, useChats } from '../../db';
@@ -179,7 +179,7 @@ function Chats() {
                                         >
                                             <div class={`mb-[2px] hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-lg ${route.path.startsWith('/chat/') && route.params.id === chat.object.chatId ? 'bg-gray-100 dark:bg-gray-800' : ''}`}>
                                                 <div className="flex items-center gap-2">
-                                                    <MessageSquare size={14} className="flex-shrink-0" />
+                                                    {chat.object.branch ? <GitBranch size={14} className="flex-shrink-0" /> : <MessageSquare size={14} className="flex-shrink-0" />}
                                                     <span className="text-sm truncate">{chat.object.title}</span>
                                                 </div>
                                             </div>

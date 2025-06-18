@@ -1,25 +1,37 @@
-import { AlertCircle, Copy, ThumbsDown, ThumbsUp } from "lucide-preact";
-import Gemini from "../../icons/Gemini";
+import { AlertCircle, Check, CircleX, Copy, Edit, GitBranch, RefreshCcw, X } from "lucide-preact";
 import { ObjectInstance, storeObject } from "@t3-chat-clone/db";
 import { account, chatMessage } from "@t3-chat-clone/stores";
-import { Signal } from "@preact/signals";
+import { Signal, useSignal } from "@preact/signals";
 import { useAccount, useDB } from "../../db";
 import Avatar from "../../icons/Avatar";
 import Markdown from "../../components/Markdown";
 import { models } from "../../models";
 import { FunctionalComponent } from "preact";
+import { branchChat } from "../../handlers/branchChat";
+import { useLocation } from "preact-iso";
+import Spinner from "../../components/Spinner";
 
-export default function Messages(props: { messages: Signal<ObjectInstance<storeObject<typeof chatMessage>>[]>, sendMessage: (msg: string) => void }) {
+export default function Messages(props: { messages: Signal<ObjectInstance<storeObject<typeof chatMessage>>[]>, sendMessage: (msg: string) => void, message: Signal<string> }) {
     const account = useAccount();
+    const db = useDB();
 
     const lastMsg = props.messages.value[props.messages.value.length - 1];
     const isLoading = lastMsg.object.role === "user" && !lastMsg.object.error;
     const LoadingModelIcon = getModelIcon(lastMsg.object.model);
 
+    const branch = async (msg: storeObject<typeof chatMessage>) => {
+        const msgs = props.messages.value.slice(0, props.messages.value.findIndex(m => m.object === msg) + 1);
+        try {
+            return await branchChat(db, msg.chatId, msgs.map(v => v.object));
+        } catch (err) {
+            return null;
+        }
+    }
+
     return <div className="flex-1 overflow-y-auto p-6 flex-col-reverse" id="messages-display">
         <div className="max-w-[90vw] lg:max-w-[min(56rem,70vw)] mx-auto space-y-6 mb-[300px]">
             {props.messages.value.map((msg, i) => (
-                <Message account={account} msg={msg.object} id={msg.id} isLastMsg={i + 1 === props.messages.value.length} sendMessage={props.sendMessage} />
+                <Message branch={branch} account={account} msg={msg.object} id={msg.id} isLastMsg={i + 1 === props.messages.value.length} sendMessage={props.sendMessage} message={props.message} />
             ))}
 
             {/* Loading Message */}
@@ -55,11 +67,41 @@ export default function Messages(props: { messages: Signal<ObjectInstance<storeO
     </div>
 }
 
-function Message(props: { msg: storeObject<typeof chatMessage>, id: string, account: Signal<storeObject<typeof account> | null>, isLastMsg: boolean, sendMessage: (msg: string) => void }) {
+function Message(props: { msg: storeObject<typeof chatMessage>, id: string, account: Signal<storeObject<typeof account> | null>, isLastMsg: boolean, sendMessage: (msg: string) => void, branch: (msg: storeObject<typeof chatMessage>) => Promise<string | null>, message: Signal<string> }) {
     const db = useDB();
+    const location = useLocation();
 
     const isUserMsg = props.msg.role === 'user';
     const ModelIcon = getModelIcon(props.msg.model);
+    const copied = useSignal(false);
+    const branchStatus = useSignal<"loading" | "failed">();
+
+    const copy = async () => {
+        try {
+            await navigator.clipboard.writeText(props.msg.content);
+            copied.value = true;
+            setTimeout(() => copied.value = false, 1500);
+        } catch (err) {
+            console.error('Failed to copy to clipboard:', err)
+        }
+    }
+
+    const resend = () => {
+        props.sendMessage(props.msg.content);
+    }
+
+    const branch = async () => {
+        branchStatus.value = "loading";
+        const branchId = await props.branch(props.msg);
+        console.log(branchId)
+        if (branchId) {
+            location.route(`/chat/${branchId}`);
+            branchStatus.value = undefined;
+        } else {
+            branchStatus.value = "failed";
+            setTimeout(() => branchStatus.value = undefined, 1500)
+        }
+    }
 
     return <>
         {(props.msg.content || !props.msg.error) && <div
@@ -83,19 +125,30 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
                     </div>
 
                     {/* Message Actions */}
-                    {!isUserMsg && (
-                        <div className="flex items-center gap-2 mt-3 pt-2 border-t border-gray-600/20">
-                            <button className="p-1 rounded transition-colors hover:bg-gray-100 text-gray-500 hover:text-gray-700 dark:hover:bg-gray-600 dark:text-gray-400 dark:hover:text-gray-200">
-                                <Copy size={14} />
+                    <div className="flex items-center gap-2 mt-3 pt-2 border-t border-gray-600/20">
+                        <button onClick={copy} class="cursor-pointer p-1 rounded transition-colors hover:bg-gray-100 text-gray-500 hover:text-gray-700 dark:hover:bg-gray-600 dark:text-gray-400 dark:hover:text-gray-200">
+                            {copied.value ? <Check size={14} /> : <Copy size={14} />}
+                        </button>
+                        {isUserMsg ? <>
+                            <button
+                                onClick={() => props.message.value = props.msg.content}
+                                class="cursor-pointer p-1 rounded transition-colors hover:bg-gray-100 text-gray-500 hover:text-gray-700 dark:hover:bg-gray-600 dark:text-gray-400 dark:hover:text-gray-200"
+                            >
+                                <Edit size={14} />
                             </button>
-                            <button className="p-1 rounded transition-colors hover:bg-gray-100 text-gray-500 hover:text-gray-700 dark:hover:bg-gray-600 dark:text-gray-400 dark:hover:text-gray-200">
-                                <ThumbsUp size={14} />
+                            <button
+                                onClick={resend}
+                                class="cursor-pointer p-1 rounded transition-colors hover:bg-gray-100 text-gray-500 hover:text-gray-700 dark:hover:bg-gray-600 dark:text-gray-400 dark:hover:text-gray-200"
+                            >
+                                <RefreshCcw size={14} />
                             </button>
-                            <button className="p-1 rounded transition-colors hover:bg-gray-100 text-gray-500 hover:text-gray-700 dark:hover:bg-gray-600 dark:text-gray-400 dark:hover:text-gray-200">
-                                <ThumbsDown size={14} />
-                            </button>
-                        </div>
-                    )}
+                        </> : <button
+                            onClick={branch}
+                            class="cursor-pointer p-1 rounded transition-colors hover:bg-gray-100 text-gray-500 hover:text-gray-700 dark:hover:bg-gray-600 dark:text-gray-400 dark:hover:text-gray-200"
+                        >
+                            {branchStatus.value === 'loading' ? <Spinner small /> : branchStatus.value === 'failed' ? <CircleX size={14} /> : <GitBranch size={14} />}
+                        </button>}
+                    </div>
                 </div>
             </div>
         </div>}

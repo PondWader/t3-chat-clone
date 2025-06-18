@@ -45,6 +45,7 @@ function ChatInterface() {
 		if (msg) {
 			const pushResult = db.push(chatMessage, {
 				chatId: msgChatId,
+				copied: 0,
 				role: 'user',
 				content: msg,
 				model: selectedModel.value.id,
@@ -111,7 +112,7 @@ function ChatInterface() {
 	return (
 		<div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-800`}>
 			{/* Main Content Area */}
-			{chat.value && chat.value.length > 0 ? <Messages messages={chat} sendMessage={sendMessage} /> : <div className="flex-1 flex items-center justify-center p-4 lg:p-8">
+			{chat.value && chat.value.length > 0 ? <Messages messages={chat} sendMessage={sendMessage} message={message} /> : <div className="flex-1 flex items-center justify-center p-4 lg:p-8">
 				<Examples onMessage={m => {
 					message.value = m;
 					sendMessage();

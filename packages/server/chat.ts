@@ -71,6 +71,7 @@ export async function handleMessage(db: Database, id: string, user: string, obje
         if (Date.now() - lastUpdate > BUFFER_MS) {
             stream.update({
                 chatId: object.chatId,
+                copied: 0,
                 role: "assistant",
                 content: msg,
                 model: object.model,
@@ -82,6 +83,7 @@ export async function handleMessage(db: Database, id: string, user: string, obje
     }
     stream.final({
         chatId: object.chatId,
+        copied: 0,
         role: "assistant",
         content: msg,
         model: object.model,
@@ -95,12 +97,14 @@ async function createNewChat(db: Database, user: string, chatId: string, firstMe
     const id = await db.push(chat, user, {
         chatId,
         title: 'New Chat',
+        branch: 0,
         createdAt
     })
     const title = await generateTitle(firstMessage);
     await db.push(chat, user, {
         chatId,
         title,
+        branch: 0,
         createdAt: Date.now()
     }, undefined, id)
 }

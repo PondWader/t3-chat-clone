@@ -12,7 +12,7 @@ export function subscribeToEvents(db: Database) {
     })
 
     db.subscribe(chatMessage, e => {
-        if (e.action === 'push' && e.object.role === 'user' && e.msgId) {
+        if (e.action === 'push' && e.object.role === 'user' && e.msgId && !e.object.copied) {
             handleMessage(db, e.id, e.user, e.object);
         }
     })
