@@ -41,7 +41,6 @@ export async function handleMessage(db: Database, id: string, user: string, obje
     if (messages.length === 1) {
         createNewChat(db, user, object.chatId, object.content);
     }
-    console.log(messages);
 
     if (object.short) {
         messages.push({ role: 'system', content: 'The user has requested you answer the last message briefly using as few words as possible.' },)

@@ -11,8 +11,7 @@ import { branchChat } from "../../handlers/branchChat";
 import { useLocation } from "preact-iso";
 import Spinner from "../../components/Spinner";
 
-export default function Messages(props: { messages: Signal<ObjectInstance<storeObject<typeof chatMessage>>[]>, sendMessage: (msg: string, attachments: string[], settings: any) => void, message: Signal<string> }) {
-    const account = useAccount();
+export default function Messages(props: { messages: Signal<ObjectInstance<storeObject<typeof chatMessage>>[]>, sendMessage: (msg: string, attachments: string[], settings: any) => void, message: Signal<string>, avatarUrl: Signal<string | undefined> }) {
     const db = useDB();
 
     const lastMsg = props.messages.value[props.messages.value.length - 1];
@@ -31,7 +30,7 @@ export default function Messages(props: { messages: Signal<ObjectInstance<storeO
     return <div className="flex-1 overflow-y-auto p-6 flex-col-reverse" id="messages-display">
         <div className="max-w-[90vw] lg:max-w-[min(56rem,70vw)] mx-auto space-y-6 mb-[300px]">
             {props.messages.value.map((msg, i) => (
-                <Message branch={branch} account={account} msg={msg.object} id={msg.id} isLastMsg={i + 1 === props.messages.value.length} sendMessage={props.sendMessage} message={props.message} />
+                <Message branch={branch} avatarUrl={props.avatarUrl} msg={msg.object} id={msg.id} isLastMsg={i + 1 === props.messages.value.length} sendMessage={props.sendMessage} message={props.message} />
             ))}
 
             {/* Loading Message */}
@@ -67,7 +66,7 @@ export default function Messages(props: { messages: Signal<ObjectInstance<storeO
     </div>
 }
 
-function Message(props: { msg: storeObject<typeof chatMessage>, id: string, account: Signal<storeObject<typeof account> | null>, isLastMsg: boolean, sendMessage: (msg: string, attachments: string[], settings: any) => void, branch: (msg: storeObject<typeof chatMessage>) => Promise<string | null>, message: Signal<string> }) {
+function Message(props: { avatarUrl: Signal<string | undefined>, msg: storeObject<typeof chatMessage>, id: string, isLastMsg: boolean, sendMessage: (msg: string, attachments: string[], settings: any) => void, branch: (msg: storeObject<typeof chatMessage>) => Promise<string | null>, message: Signal<string> }) {
     const db = useDB();
     const location = useLocation();
 
@@ -115,7 +114,7 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
                 {/* Avatar */}
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-200 dark:bg-gray-700`}>
                     {isUserMsg ? (
-                        props.account.value && props.account.value.avatarUrl ? <img alt="user avatar" class="rounded-full" width="40" height="40" src={props.account.value.avatarUrl ?? ''} /> : <Avatar />
+                        props.avatarUrl.value ? <img alt="user avatar" class="rounded-full" width="40" height="40" src={props.avatarUrl.value ?? ''} /> : <Avatar />
                     ) : (
                         <ModelIcon height={16} width={16} />
                     )}

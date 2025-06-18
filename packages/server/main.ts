@@ -1,8 +1,10 @@
 import app from "@t3-chat-clone/app";
 import { authHandler, db, linkHandler } from "./instances";
 import { createCdn } from "./cdn";
+import { createShare } from "./share";
 
 const cdn = createCdn();
+const share = await createShare(db, authHandler);
 
 const server = Bun.serve({
     routes: {
@@ -33,7 +35,9 @@ const server = Bun.serve({
             }
         },
         "/api/cdn/upload": { POST: cdn.upload },
-        "/api/cdn/f/:name": { GET: cdn.load }
+        "/api/cdn/f/:name": { GET: cdn.load },
+        "/api/share": { POST: share.share },
+        "/api/share/:user/:id": { GET: share.getShare }
     },
     websocket: db.bindWebSocket(),
     development: process.env.NODE_ENV === 'development'

@@ -1,31 +1,37 @@
 import { FunctionalComponent } from 'preact';
-import { Send, Search, Paperclip, MessageSquareText, Share, Image, X } from 'lucide-preact';
-import GeminiIcon from "../../icons/Gemini.tsx";
+import { Send, Search, MessageSquareText, Share, Image, X } from 'lucide-preact';
 import { ModelSelectionModal } from './ModelSelectionModal.tsx';
-import { Signal, useSignal, useSignalEffect } from '@preact/signals';
+import { Signal, useComputed, useSignal, useSignalEffect } from '@preact/signals';
 import { useCallback, useEffect, useMemo, useRef } from 'preact/hooks';
 import Sidebar from './Sidebar.tsx';
 import Examples from './Examples.tsx';
 import { useLocation, useRoute } from 'preact-iso';
-import { useChat, useDB } from '../../db.tsx';
+import { useAccount, useChat, useDB } from '../../db.tsx';
 import { chatMessage } from '@t3-chat-clone/stores';
 import Messages from './Messages.tsx';
 import { SyncTimeoutError } from '../../../../db/client/Connection.ts';
 import { Model, models } from '../../models.ts';
 import { upload } from '../../handlers/upload.ts';
+import { ShareModal } from './ShareModal.tsx';
 
 export function Chat() {
+	const route = useRoute();
+	const chat = useChat(route.params.id ?? null);
+	const account = useAccount();
+	const avatarUrl = useComputed(() => account.value?.avatarUrl || undefined)
+
 	return <div className={`overflow-y-hidden flex h-dvh font-sans bg-gray-50 dark:bg-gray-900`}>
 		<Sidebar />
-		<ChatInterface />
+		<ChatInterface chat={chat} avatarUrl={avatarUrl} />
 	</div>
 };
 
-function ChatInterface() {
+export function ChatInterface({ chat, avatarUrl, readOnly }: { chat: ReturnType<typeof useChat>, avatarUrl: Signal<string | undefined>, readOnly?: boolean }) {
 	const route = useRoute();
 	const location = useLocation();
 	const message = useSignal('');
 	const isModelModalOpen = useSignal(false);
+	const isShareModalOpen = useSignal(false);
 	const selectedModel = useSignal(models.find(m => m.id === localStorage.getItem('selected_model_id')) ?? models.find(m => m.id === 'llama-3.1-8b-instant')!);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const settings = useSignal<ChatSettings>({ search: false, shortResponse: false });
@@ -35,8 +41,6 @@ function ChatInterface() {
 	useSignalEffect(() => {
 		localStorage.setItem('selected_model_id', selectedModel.value.id);
 	})
-
-	const chat = useChat(route.params.id ?? null);
 
 	useEffect(() => {
 		scrollToBottomOfChat();
@@ -122,7 +126,7 @@ function ChatInterface() {
 	return (
 		<div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-800`}>
 			{/* Main Content Area */}
-			{chat.value && chat.value.length > 0 ? <Messages messages={chat} sendMessage={sendMessage} message={message} /> : <div className="flex-1 flex items-center justify-center p-4 lg:p-8">
+			{chat.value && chat.value.length > 0 ? <Messages messages={chat} sendMessage={sendMessage} message={message} avatarUrl={avatarUrl} /> : <div className="flex-1 flex items-center justify-center p-4 lg:p-8">
 				<Examples onMessage={m => {
 					message.value = m;
 					sendMessage();
@@ -130,7 +134,7 @@ function ChatInterface() {
 			</div>}
 
 			{/* Message Input Area */}
-			<div className={`border-t p-6 border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900`}>
+			<div className={`border-t p-6 border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 ${readOnly ? 'hidden' : ''}`}>
 				<div className="max-w-4xl mx-auto">
 					{selectedModel.value.capabilities.reasoning && attachments.value.map(a =>
 						<RemovableImage width="120" onRemove={() => {
@@ -174,7 +178,7 @@ function ChatInterface() {
 					</div>
 
 					{/* Footer Info */}
-					<div className="flex items-center justify-between mt-4 text-xs">
+					<div className={`flex items-center justify-between mt-4 text-xs`}>
 						<div className="flex items-center gap-1">
 							<button
 								onClick={() => isModelModalOpen.value = true}
@@ -186,7 +190,7 @@ function ChatInterface() {
 								<selectedModel.value.icon height={16} width={16} />
 								<span className="ml-sm">{selectedModel.value.name + ' ' + selectedModel.value.version}</span>
 							</button>
-							<ChatControls model={selectedModel.value} settings={settings} attachments={attachments} />
+							<ChatControls model={selectedModel.value} settings={settings} attachments={attachments} openShare={() => isShareModalOpen.value = true} share={!!route.params.id} />
 						</div>
 					</div>
 				</div>
@@ -199,6 +203,8 @@ function ChatInterface() {
 				onClose={() => { isModelModalOpen.value = false }}
 				onSelectModel={handleModelSelect}
 			/>
+
+			<ShareModal isOpen={isShareModalOpen} onClose={() => isShareModalOpen.value = false} chatId={route.params.id} />
 		</div >
 	);
 }
@@ -208,7 +214,7 @@ type ChatSettings = {
 	shortResponse: boolean;
 }
 
-function ChatControls(props: { model: Model, settings: Signal<ChatSettings>, attachments: Signal<string[]> }) {
+function ChatControls(props: { model: Model, settings: Signal<ChatSettings>, attachments: Signal<string[]>, openShare: () => void, share: boolean }) {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const toggle = (key: keyof ChatSettings) => {
@@ -237,6 +243,7 @@ function ChatControls(props: { model: Model, settings: Signal<ChatSettings>, att
 			}} />
 			<ChatControl name="Attach" enabled={false} disabled={props.attachments.value.length > 0} icon={Image} onClick={() => fileInputRef.current!.click()} />
 		</> : undefined}
+		{props.share && <ChatControl name="Share" enabled={false} icon={Share} onClick={props.openShare} />}
 	</>
 }
 
