@@ -7,13 +7,14 @@ import { useAccount, useDB } from "../../db";
 import Avatar from "../../icons/Avatar";
 import Markdown from "../../components/Markdown";
 import { models } from "../../models";
+import { FunctionalComponent } from "preact";
 
 export default function Messages(props: { messages: Signal<ObjectInstance<storeObject<typeof chatMessage>>[]>, sendMessage: (msg: string) => void }) {
     const account = useAccount();
 
     const lastMsg = props.messages.value[props.messages.value.length - 1];
     const isLoading = lastMsg.object.role === "user" && !lastMsg.object.error;
-    const LoadingModelIcon = models.find(m => m.id === lastMsg.object.model)!.icon;
+    const LoadingModelIcon = getModelIcon(lastMsg.object.model);
 
     return <div className="flex-1 overflow-y-auto p-6 flex-col-reverse" id="messages-display">
         <div className="max-w-[90vw] lg:max-w-[min(56rem,70vw)] mx-auto space-y-6 mb-[300px]">
@@ -58,7 +59,7 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
     const db = useDB();
 
     const isUserMsg = props.msg.role === 'user';
-    const ModelIcon = models.find(m => m.id === props.msg.model)!.icon;
+    const ModelIcon = getModelIcon(props.msg.model);
 
     return <>
         <div
@@ -119,4 +120,11 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
             </div>
         </div>}
     </>
+}
+
+function getModelIcon(modelId: string): FunctionalComponent<{
+    height: number;
+    width: number;
+}> {
+    return models.find(m => m.id === modelId)?.icon ?? (() => undefined);
 }

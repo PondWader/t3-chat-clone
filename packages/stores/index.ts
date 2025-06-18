@@ -15,6 +15,14 @@ export const account = createStore({
     },
 });
 
+export const settings = createStore({
+    name: 'settings',
+    type: 'singular',
+    schema: z.object({
+        openRouterKey: z.string()
+    })
+})
+
 export const chat = createStore({
     name: 'chat',
     type: 'event',

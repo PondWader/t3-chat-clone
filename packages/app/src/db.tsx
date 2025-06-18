@@ -1,5 +1,5 @@
 import { Client, createClient } from "@t3-chat-clone/db/client";
-import { account, chat, chatMessage } from "@t3-chat-clone/stores";
+import { account, chat, chatMessage, settings } from "@t3-chat-clone/stores";
 import { ComponentChild, createContext } from "preact";
 import { useContext, useEffect, useMemo } from "preact/hooks";
 import { useSignal, signal, useComputed, computed } from "@preact/signals";
@@ -112,6 +112,7 @@ export function DBProvider(props: { children: ComponentChild }) {
         dbName: 'app',
         stores: [
             account,
+            settings,
             chatMessage,
             chat
         ]

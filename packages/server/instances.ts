@@ -1,5 +1,5 @@
 import { createDatabase } from "@t3-chat-clone/db/server";
-import { account, chat, chatMessage } from "@t3-chat-clone/stores";
+import { account, chat, chatMessage, settings } from "@t3-chat-clone/stores";
 import { subscribeToEvents } from "./events.js";
 import { createAuthHandler } from "./auth/index.js";
 import { createLinkHandler } from "./auth/link.js";
@@ -14,7 +14,8 @@ export const db = await createDatabase({
     stores: [
         chatMessage,
         chat,
-        account
+        account,
+        settings
     ]
 })
 subscribeToEvents(db);

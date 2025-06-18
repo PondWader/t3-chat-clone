@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { DatabaseDriverConn } from "../../db/server/database";
 import { AuthProvider } from "./provider";
 import { account } from "@t3-chat-clone/stores";
+import { CookieMap } from "bun";
 
 const cookieParams = {
     secure: true,
@@ -24,6 +25,7 @@ export type AuthHandler = {
     createUserResponse(provider: string, id: string, email: string, username: string, displayName: string, avatarUrl?: string): Promise<Response>
     setProviderConfig<T>(provider: AuthProvider<T, any>, config: T): Promise<void>
     login(req: Bun.BunRequest): Promise<any>
+    logout(req: Bun.BunRequest): Promise<any>
     getAuthUrls(state: string): Promise<Record<string, string>>
 }
 
@@ -206,6 +208,33 @@ export async function createAuthHandler(db: Database, providers: AuthProvider<an
             if (providerConfig === null) return Response.json({ error: true, message: 'Auth provider has not been configured' }, { status: 400 });
 
             return provider.authenticate(authHandler, JSON.parse((providerConfig as any).config), params);
+        },
+        async logout(req: Bun.BunRequest) {
+            const refreshToken = req.cookies.get('refresh-token');
+            if (refreshToken) {
+                await db.dbConn.remove(refreshTokensTableName, {
+                    token: refreshToken
+                })
+            }
+
+            const cookies = new Bun.CookieMap();
+            cookies.set('refresh-token', '', {
+                ...cookieParams,
+                expires: new Date()
+            })
+            cookies.set('access-token', '', {
+                ...cookieParams,
+                expires: new Date()
+            })
+
+            const headers = new Headers();
+            for (const cookie of cookies.toSetCookieHeaders()) {
+                headers.append('Set-Cookie', cookie);
+            }
+            return new Response(null, {
+                status: 204,
+                headers
+            })
         },
         async getAuthUrls(state: string): Promise<Record<string, string>> {
             const urls: Record<string, string> = {};
