@@ -11,7 +11,7 @@ import { branchChat } from "../../handlers/branchChat";
 import { useLocation } from "preact-iso";
 import Spinner from "../../components/Spinner";
 
-export default function Messages(props: { messages: Signal<ObjectInstance<storeObject<typeof chatMessage>>[]>, sendMessage: (msg: string) => void, message: Signal<string> }) {
+export default function Messages(props: { messages: Signal<ObjectInstance<storeObject<typeof chatMessage>>[]>, sendMessage: (msg: string, attachments: string[], settings: any) => void, message: Signal<string> }) {
     const account = useAccount();
     const db = useDB();
 
@@ -67,7 +67,7 @@ export default function Messages(props: { messages: Signal<ObjectInstance<storeO
     </div>
 }
 
-function Message(props: { msg: storeObject<typeof chatMessage>, id: string, account: Signal<storeObject<typeof account> | null>, isLastMsg: boolean, sendMessage: (msg: string) => void, branch: (msg: storeObject<typeof chatMessage>) => Promise<string | null>, message: Signal<string> }) {
+function Message(props: { msg: storeObject<typeof chatMessage>, id: string, account: Signal<storeObject<typeof account> | null>, isLastMsg: boolean, sendMessage: (msg: string, attachments: string[], settings: any) => void, branch: (msg: storeObject<typeof chatMessage>) => Promise<string | null>, message: Signal<string> }) {
     const db = useDB();
     const location = useLocation();
 
@@ -87,7 +87,10 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
     }
 
     const resend = () => {
-        props.sendMessage(props.msg.content);
+        props.sendMessage(props.msg.content, JSON.parse(props.msg.attachments!) || [], {
+            search: props.msg.search > 0,
+            shortResponse: props.msg.short > 0
+        });
     }
 
     const branch = async () => {
@@ -123,6 +126,10 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
                     <div className="text-sm leading-relaxeds overflow-hidden break-words overflow-wrap-anywhere">
                         <Markdown>{props.msg.content}</Markdown>
                     </div>
+
+                    {props.msg.attachments && JSON.parse(props.msg.attachments).map((a: string) => {
+                        return <img class="mr-2" width="120" alt="user uploaded image" src={a} />
+                    })}
 
                     {/* Message Actions */}
                     <div className="flex items-center gap-2 mt-3 pt-2 border-t border-gray-600/20">
@@ -161,7 +168,7 @@ function Message(props: { msg: storeObject<typeof chatMessage>, id: string, acco
                 <span className="text-sm">{props.msg.error}</span>
                 {isUserMsg && <button onClick={() => {
                     db.remove(chatMessage, props.id);
-                    props.sendMessage(props.msg.content);
+                    resend();
                 }}
                     className={`text-sm font-medium underline hover:no-underline transition-all cursor-pointer
                         text-red-600 hover:text-red-800

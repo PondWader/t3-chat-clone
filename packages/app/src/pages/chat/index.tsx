@@ -1,5 +1,5 @@
 import { FunctionalComponent } from 'preact';
-import { Send, Search, Paperclip, MessageSquareText, Share } from 'lucide-preact';
+import { Send, Search, Paperclip, MessageSquareText, Share, Image, X } from 'lucide-preact';
 import GeminiIcon from "../../icons/Gemini.tsx";
 import { ModelSelectionModal } from './ModelSelectionModal.tsx';
 import { Signal, useSignal, useSignalEffect } from '@preact/signals';
@@ -12,6 +12,7 @@ import { chatMessage } from '@t3-chat-clone/stores';
 import Messages from './Messages.tsx';
 import { SyncTimeoutError } from '../../../../db/client/Connection.ts';
 import { Model, models } from '../../models.ts';
+import { upload } from '../../handlers/upload.ts';
 
 export function Chat() {
 	return <div className={`overflow-y-hidden flex h-dvh font-sans bg-gray-50 dark:bg-gray-900`}>
@@ -28,6 +29,7 @@ function ChatInterface() {
 	const selectedModel = useSignal(models.find(m => m.id === localStorage.getItem('selected_model_id')) ?? models.find(m => m.id === 'llama-3.1-8b-instant')!);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const settings = useSignal<ChatSettings>({ search: false, shortResponse: false });
+	const attachments = useSignal<string[]>([]);
 	const db = useDB();
 
 	useSignalEffect(() => {
@@ -40,7 +42,10 @@ function ChatInterface() {
 		scrollToBottomOfChat();
 	}, [])
 
-	const sendMessage = useCallback((msg?: string) => {
+	const sendMessage = useCallback((msg?: string, attach?: string[], set?: ChatSettings) => {
+		set = set || settings.value;
+		attach = attach || attachments.value;
+
 		msg = msg ?? message.value.trim();
 		const msgChatId = route.params.id ?? crypto.randomUUID();
 		if (msg) {
@@ -50,8 +55,9 @@ function ChatInterface() {
 				role: 'user',
 				content: msg,
 				model: selectedModel.value.id,
-				search: settings.value.search ? 1 : 0,
-				short: settings.value.shortResponse ? 1 : 0,
+				search: set.search ? 1 : 0,
+				short: set.shortResponse ? 1 : 0,
+				attachments: !selectedModel.value.capabilities.images || !attach || attach.length === 0 ? null : JSON.stringify(attach.map(v => v.startsWith('/') ? `${window.location.origin}${v}` : v)),
 				error: null,
 				createdAt: Date.now()
 			})
@@ -71,6 +77,7 @@ function ChatInterface() {
 				location.route(`/chat/${msgChatId}`);
 			}
 			message.value = '';
+			attachments.value = [];
 			scrollToBottomOfChat();
 		}
 	}, [route.params.id, message]);
@@ -125,6 +132,12 @@ function ChatInterface() {
 			{/* Message Input Area */}
 			<div className={`border-t p-6 border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900`}>
 				<div className="max-w-4xl mx-auto">
+					{selectedModel.value.capabilities.reasoning && attachments.value.map(a =>
+						<RemovableImage width="120" onRemove={() => {
+							attachments.value = attachments.value.filter(v => v !== a);
+						}} className="mb-6 mr-4" src={a} alt="user uploaded image" />
+					)}
+
 					<div className="relative">
 						<textarea
 							ref={textareaRef}
@@ -151,22 +164,12 @@ function ChatInterface() {
 						<button
 							onClick={() => sendMessage()}
 							disabled={!message.value.trim()}
-							className={`absolute right-2 mr-8 top-2 p-2 rounded-md ${message.value.trim()
-								? `text-purple-600 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700`
-								: 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
-								}`}
-						>
-							<Send size={18} />
-						</button>
-						<button
-							onClick={() => sendMessage()}
-							disabled={!message.value.trim()}
 							className={`absolute right-2 top-2 p-2 rounded-md ${message.value.trim()
 								? `text-purple-600 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700`
 								: 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
 								}`}
 						>
-							<Share size={18} />
+							<Send size={18} />
 						</button>
 					</div>
 
@@ -183,7 +186,7 @@ function ChatInterface() {
 								<selectedModel.value.icon height={16} width={16} />
 								<span className="ml-sm">{selectedModel.value.name + ' ' + selectedModel.value.version}</span>
 							</button>
-							<ChatControls model={selectedModel.value} settings={settings} />
+							<ChatControls model={selectedModel.value} settings={settings} attachments={attachments} />
 						</div>
 					</div>
 				</div>
@@ -205,7 +208,9 @@ type ChatSettings = {
 	shortResponse: boolean;
 }
 
-function ChatControls(props: { model: Model, settings: Signal<ChatSettings> }) {
+function ChatControls(props: { model: Model, settings: Signal<ChatSettings>, attachments: Signal<string[]> }) {
+	const fileInputRef = useRef<HTMLInputElement>(null);
+
 	const toggle = (key: keyof ChatSettings) => {
 		props.settings.value[key] = !props.settings.value[key];
 		props.settings.value = { ...props.settings.value };
@@ -213,16 +218,34 @@ function ChatControls(props: { model: Model, settings: Signal<ChatSettings> }) {
 
 	return <>
 		{props.model.capabilities.search ? <ChatControl name="Search" onClick={() => toggle('search')} enabled={props.settings.value.search} icon={Search} /> : undefined}
-		{props.model.capabilities.files ? <ChatControl name="Attach" enabled={false} icon={Paperclip} /> : undefined}
 		<ChatControl name="Short Response" onClick={() => toggle('shortResponse')} enabled={props.settings.value.shortResponse} icon={MessageSquareText} />
+		{props.model.capabilities.files || props.model.capabilities.images ? <>
+			<input type="file" class="hidden" accept="image/png, image/jpeg" ref={fileInputRef} onChange={async (e) => {
+				const input = e.target as HTMLInputElement;
+				const file = input.files![0];
+				if (file === undefined) return;
+				if (file.type !== 'image/png' && file.type !== 'image/jpeg') return;
+				if (props.attachments.value.length > 1) return;
+
+				try {
+					const url = await upload(file, file.type);
+					props.attachments.value = [...props.attachments.value, url];
+				} catch (err) {
+					console.error(err);
+					alert('File upload failed! Check browser console for more information.');
+				}
+			}} />
+			<ChatControl name="Attach" enabled={false} disabled={props.attachments.value.length > 0} icon={Image} onClick={() => fileInputRef.current!.click()} />
+		</> : undefined}
 	</>
 }
 
-function ChatControl(props: { name: string, onClick?: () => void, enabled: boolean, icon: FunctionalComponent<{ size: number | string }> }) {
-	return <button onClick={props.onClick} className={`flex items-center p-2 rounded-full gap-1 cursor-pointer
+function ChatControl(props: { name: string, onClick?: () => void, enabled: boolean, icon: FunctionalComponent<{ size: number | string }>, disabled?: boolean }) {
+	return <button disabled={props.disabled} onClick={props.onClick} className={`flex items-center p-2 rounded-full gap-1 
 		bg-white hover:bg-gray-100 text-gray-700 hover:text-gray-900 shadow-sm border border-gray-200
 		dark:bg-transparent dark:border-gray-700 dark:border-2 dark:hover:bg-gray-800 dark:text-gray-300 dark:hover:text-white
 		${props.enabled ? '!border-purple-600' : ''}
+		${props.disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
 	`}>
 		<props.icon size={12} />
 		<span class="hidden lg:block">{props.name}</span>
@@ -237,3 +260,39 @@ function scrollToBottomOfChat() {
 		}
 	}, 0)
 }
+
+function RemovableImage({
+	src,
+	alt,
+	width,
+	onRemove,
+	className = ''
+}: {
+	src: string;
+	alt: string;
+	width: string;
+	onRemove: () => void;
+	className?: string;
+}) {
+	return (
+		<div className={`relative group inline-block ${className}`}>
+			{/* Image */}
+			<img
+				width={width}
+				src={src}
+				alt={alt}
+				className="rounded-xl shadow-lg transition-all duration-300 group-hover:shadow-xl group-hover:scale-[1.02] max-w-full h-auto"
+			/>
+
+			{/* Remove Button */}
+			<button
+				onClick={onRemove}
+				className="cursor-pointer absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transform hover:scale-110 opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+				aria-label={`Remove ${alt}`}
+				type="button"
+			>
+				<X size={16} className="stroke-2" />
+			</button>
+		</div>
+	);
+};

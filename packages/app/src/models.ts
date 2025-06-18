@@ -58,7 +58,8 @@ export const models: Model[] = [
         capabilities: {
             reasoning: true,
             speed: true,
-            search: true
+            search: true,
+            images: true
         },
         requiresOpenRouterKey: true
     },
@@ -69,7 +70,8 @@ export const models: Model[] = [
         icon: GPT,
         capabilities: {
             reasoning: true,
-            search: true
+            search: true,
+            images: true
         },
         requiresOpenRouterKey: true
     },
@@ -79,7 +81,8 @@ export const models: Model[] = [
         version: '4.1',
         icon: GPT,
         capabilities: {
-            search: true
+            search: true,
+            images: true
         },
         requiresOpenRouterKey: true
     },
@@ -90,7 +93,8 @@ export const models: Model[] = [
         icon: Claude,
         capabilities: {
             reasoning: true,
-            search: true
+            search: true,
+            images: true
         },
         requiresOpenRouterKey: true
     },
@@ -101,8 +105,8 @@ export const models: Model[] = [
         icon: Claude,
         capabilities: {
             reasoning: true,
-            speed: true,
-            search: true
+            search: true,
+            images: true
         },
         requiresOpenRouterKey: true
     },
@@ -114,18 +118,20 @@ export const models: Model[] = [
         capabilities: {
             speed: true,
             reasoning: true,
-            search: true
+            search: true,
+            images: true
         },
         requiresOpenRouterKey: true
     },
     {
-        id: 'google/gemini-2.5-pro',
+        id: 'gemini-2.5-pro',
         name: 'Gemini',
         version: '2.5 Pro',
         icon: Gemini,
         capabilities: {
             reasoning: true,
-            search: true
+            search: true,
+            images: true
         },
         requiresOpenRouterKey: true
     }

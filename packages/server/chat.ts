@@ -1,6 +1,6 @@
 import { groq } from "@ai-sdk/groq";
 import { storeObject } from "@t3-chat-clone/db";
-import { APICallError, generateText, LanguageModelV1 } from "ai";
+import { APICallError, generateText, ImagePart, LanguageModelV1 } from "ai";
 import { chat, chatMessage, settings } from "@t3-chat-clone/stores";
 import { Database } from "@t3-chat-clone/db/server";
 import { CoreMessage, streamText } from "ai";
@@ -34,16 +34,17 @@ export async function handleMessage(db: Database, id: string, user: string, obje
     for (const msg of history) {
         if (msg.id === id) break;
         if (msg.object.error) continue;
-        messages.push({ role: msg.object.role as any, content: msg.object.content });
+        messages.push(objectToMessage(msg.object, false));
     }
-    messages.push({ role: 'user', content: object.content });
+    messages.push(objectToMessage(object, true));
 
     if (messages.length === 1) {
         createNewChat(db, user, object.chatId, object.content);
     }
+    console.log(messages);
 
     if (object.short) {
-        messages.push({ role: 'system', content: 'The user has requested you answer the last message briefly using as few words as possible.' })
+        messages.push({ role: 'system', content: 'The user has requested you answer the last message briefly using as few words as possible.' },)
     }
 
     let error: string | null = null;
@@ -52,6 +53,15 @@ export async function handleMessage(db: Database, id: string, user: string, obje
         messages,
         onError: (err) => {
             if (err.error instanceof APICallError && isByok) {
+                try {
+                    if (err.error.responseBody) {
+                        const json = JSON.parse(err.error.responseBody!);
+                        if (json.error.message && json.error.message !== 'No auth credentials found') {
+                            error = 'OpenRouter error: ' + json.error.message;
+                            return;
+                        }
+                    }
+                } catch { }
                 error = 'OpenRouter API key is invalid.';
                 return;
             }
@@ -81,6 +91,7 @@ export async function handleMessage(db: Database, id: string, user: string, obje
                 model: object.model,
                 search: object.search,
                 short: object.short,
+                attachments: null,
                 createdAt: date,
                 error
             })
@@ -95,6 +106,7 @@ export async function handleMessage(db: Database, id: string, user: string, obje
         model: object.model,
         search: object.search,
         short: object.short,
+        attachments: null,
         createdAt: date,
         error
     })
@@ -148,4 +160,29 @@ async function loadByokModel(db: Database, user: string, model: string, search: 
     })
 
     return { error: undefined, instance: openRouter.chat(orModelId) };
+}
+
+function objectToMessage(msg: storeObject<typeof chatMessage>, allowImage: boolean): CoreMessage {
+    if (!msg.attachments || !allowImage) {
+        return { role: msg.role as any, content: msg.content }
+    }
+    try {
+        const attachments = JSON.parse(msg.attachments);
+        if (!Array.isArray(attachments) || attachments.length > 3) return { role: msg.role as any, content: msg.content }
+
+        return {
+            role: msg.role as any,
+            content: [
+                { type: 'text', text: msg.content },
+                ...attachments.map(v => ({
+                    type: 'image',
+                    mimeType: v.endsWith('.jpeg') ? 'image/jpeg' : 'image/png',
+                    image: new URL(v)
+                } as ImagePart))
+            ]
+        }
+    } catch (err) {
+        console.error(err);
+        return { role: msg.role as any, content: msg.content }
+    }
 }

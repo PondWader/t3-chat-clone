@@ -50,7 +50,11 @@ export const chatMessage = createStore({
         error: z.string().nullable(),
         search: z.int(),
         short: z.int(),
+        attachments: z.string().nullable(),
         createdAt: z.int()
     }),
+    validateClientAction(action, object) {
+        return object.role === "user" || object.role === "assistant";
+    },
     indices: ["chatId"]
 });

@@ -1,5 +1,8 @@
 import app from "@t3-chat-clone/app";
 import { authHandler, db, linkHandler } from "./instances";
+import { createCdn } from "./cdn";
+
+const cdn = createCdn();
 
 const server = Bun.serve({
     routes: {
@@ -28,7 +31,9 @@ const server = Bun.serve({
                     return new Response("WebSocket upgrade failed", { status: 500, headers });
                 }
             }
-        }
+        },
+        "/api/cdn/upload": { POST: cdn.upload },
+        "/api/cdn/f/:name": { GET: cdn.load }
     },
     websocket: db.bindWebSocket(),
     development: process.env.NODE_ENV === 'development'
