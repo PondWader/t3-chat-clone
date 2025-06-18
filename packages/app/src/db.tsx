@@ -14,18 +14,20 @@ export function useDB(): Client {
 const chatCache = new Map<string, Map<string, ObjectInstance<any>>>();
 
 export function useChat(chatId: string | null) {
-    if (chatId === null) return useSignal([]);
-
-    const history = useStore(chatMessage, "chatId", chatId, chatCache.get(chatId))
+    const history = useStore(chatMessage, "chatId", chatId, chatCache.get(chatId!))
 
     return useMemo(() => computed(() => {
         if (history.value.size < 32) {
             if (chatCache.size > 5) {
                 chatCache.delete(chatCache.keys().next().value!)
             }
-            chatCache.set(chatId, history.value);
+            if (chatId) {
+                chatCache.set(chatId, history.value);
+            }
         } else {
-            chatCache.delete(chatId);
+            if (chatId) {
+                chatCache.delete(chatId);
+            }
         }
 
         return [...history.value.values()]
@@ -43,9 +45,11 @@ export function useStore<T>(store: Store<T>, key?: keyof T, value?: any, init?: 
     const items = useMemo(() => signal<Map<string, ObjectInstance<T>>>(init ?? new Map()), [store, key, value]);
 
     useEffect(() => {
+        let unmounted = false;
         if (key) {
             db.getAllMatches(store, key, value)
                 .then(objects => {
+                    if (unmounted) return;
                     objects.filter(m => m.object[key] === value)
                         .forEach(m => {
                             items.value.set(m.id, m);
@@ -55,6 +59,7 @@ export function useStore<T>(store: Store<T>, key?: keyof T, value?: any, init?: 
         } else {
             db.getAll(store)
                 .then(objects => {
+                    if (unmounted) return;
                     objects.forEach(m => {
                         items.value.set(m.id, m);
                     });
@@ -73,57 +78,47 @@ export function useStore<T>(store: Store<T>, key?: keyof T, value?: any, init?: 
             items.value = new Map(items.value);
         })
 
-        return () => sub.unsubscribe();
+        return () => {
+            unmounted = true;
+            sub.unsubscribe();
+        }
     }, [store, key, value]);
 
     return items;
 }
 
 export function useAccount() {
-    const db = useDB();
-    const signal = useSignal<storeObject<typeof account> | null>(null);
-
-    useEffect(() => {
-        db.getAll(account).then(acc => {
-            if (acc.length !== 0) {
-                signal.value = acc[0].object;
-            }
-        });
-
-        const sub = db.subscribe(account, e => {
-            if (e.action === 'push') {
-                signal.value = e.object;
-            } else if (e.action === 'remove' || e.action === 'clear') {
-                signal.value = null;
-            }
-        })
-
-        return () => sub.unsubscribe();
-    }, []);
-
-    return signal;
+    return useSingularStore(account, null);
 }
 
 export function useSettings() {
+    return useSingularStore(settings, { openRouterKey: null });
+}
+
+function useSingularStore<T, U extends T | null>(store: Store<T>, defaultValue: U) {
     const db = useDB();
-    const signal = useSignal<storeObject<typeof settings>>({ openRouterKey: null });
+    const signal = useSignal<T | U>(defaultValue!);
 
     useEffect(() => {
-        db.getAll(settings).then(acc => {
-            if (acc.length !== 0) {
+        let unmounted = false;
+        db.getAll(store).then(acc => {
+            if (!unmounted && acc.length !== 0) {
                 signal.value = acc[0].object;
             }
         });
 
-        const sub = db.subscribe(settings, e => {
+        const sub = db.subscribe(store, e => {
             if (e.action === 'push') {
                 signal.value = e.object;
             } else if (e.action === 'remove' || e.action === 'clear') {
-                signal.value = { openRouterKey: null };
+                signal.value = defaultValue;
             }
         })
 
-        return () => sub.unsubscribe();
+        return () => {
+            unmounted = true;
+            sub.unsubscribe();
+        };
     }, []);
 
     return signal;
