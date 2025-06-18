@@ -7,7 +7,7 @@ export async function branchChat(db: Client, chatId: string, messages: storeObje
     if (chatObj.length < 1) throw new Error('Could not find chat!');
     const newChatId = crypto.randomUUID();
 
-    Promise.all(messages.map(m => {
+    await Promise.all(messages.map(m => {
         return db.push(chatMessage, {
             ...m,
             chatId: newChatId,

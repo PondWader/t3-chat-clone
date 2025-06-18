@@ -18,7 +18,7 @@ export async function handleMessage(db: Database, id: string, user: string, obje
         model = groq(object.model);
     } else {
         isByok = true;
-        const byok = await loadByokModel(db, user, object.model);
+        const byok = await loadByokModel(db, user, object.model, object.search > 0);
         if (typeof byok.error === 'string') {
             await db.push(chatMessage, user, {
                 ...object,
@@ -42,12 +42,16 @@ export async function handleMessage(db: Database, id: string, user: string, obje
         createNewChat(db, user, object.chatId, object.content);
     }
 
+    if (object.short) {
+        messages.push({ role: 'system', content: 'The user has requested you answer the last message briefly using as few words as possible.' })
+    }
+
     let error: string | null = null;
     const { textStream } = streamText({
         model,
         messages,
         onError: (err) => {
-            if (err.error instanceof APICallError) {
+            if (err.error instanceof APICallError && isByok) {
                 error = 'OpenRouter API key is invalid.';
                 return;
             }
@@ -75,6 +79,8 @@ export async function handleMessage(db: Database, id: string, user: string, obje
                 role: "assistant",
                 content: msg,
                 model: object.model,
+                search: object.search,
+                short: object.short,
                 createdAt: date,
                 error
             })
@@ -87,6 +93,8 @@ export async function handleMessage(db: Database, id: string, user: string, obje
         role: "assistant",
         content: msg,
         model: object.model,
+        search: object.search,
+        short: object.short,
         createdAt: date,
         error
     })
@@ -127,12 +135,13 @@ async function generateTitle(message: string) {
 
 type Model = { error: string } | { error: undefined, instance: LanguageModelV1 }
 
-async function loadByokModel(db: Database, user: string, model: string): Promise<Model> {
+async function loadByokModel(db: Database, user: string, model: string, search: boolean): Promise<Model> {
     const userSettings = await db.getAll(settings, user)
     if (userSettings.length < 1 || userSettings[0].object.openRouterKey === null) return { error: 'OpenRouter API key has not been configured.' };
 
-    const orModelId = openRouterModels[model];
+    let orModelId = openRouterModels[model];
     if (orModelId === undefined) return { error: 'Invalid model selection.' }
+    if (search) orModelId += ':online';
 
     const openRouter = createOpenRouter({
         apiKey: userSettings[0].object.openRouterKey

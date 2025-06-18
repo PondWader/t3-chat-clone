@@ -57,7 +57,8 @@ export const models: Model[] = [
         icon: GPT,
         capabilities: {
             reasoning: true,
-            speed: true
+            speed: true,
+            search: true
         },
         requiresOpenRouterKey: true
     },
@@ -67,7 +68,8 @@ export const models: Model[] = [
         version: '4o',
         icon: GPT,
         capabilities: {
-            reasoning: true
+            reasoning: true,
+            search: true
         },
         requiresOpenRouterKey: true
     },
@@ -76,7 +78,9 @@ export const models: Model[] = [
         name: 'GPT',
         version: '4.1',
         icon: GPT,
-        capabilities: {},
+        capabilities: {
+            search: true
+        },
         requiresOpenRouterKey: true
     },
     {
@@ -85,7 +89,8 @@ export const models: Model[] = [
         version: 'Sonnet 4',
         icon: Claude,
         capabilities: {
-            reasoning: true
+            reasoning: true,
+            search: true
         },
         requiresOpenRouterKey: true
     },
@@ -96,7 +101,8 @@ export const models: Model[] = [
         icon: Claude,
         capabilities: {
             reasoning: true,
-            speed: true
+            speed: true,
+            search: true
         },
         requiresOpenRouterKey: true
     },
@@ -107,7 +113,8 @@ export const models: Model[] = [
         icon: Gemini,
         capabilities: {
             speed: true,
-            reasoning: true
+            reasoning: true,
+            search: true
         },
         requiresOpenRouterKey: true
     },
@@ -117,18 +124,9 @@ export const models: Model[] = [
         version: '2.5 Pro',
         icon: Gemini,
         capabilities: {
-            reasoning: true
+            reasoning: true,
+            search: true
         },
         requiresOpenRouterKey: true
     }
 ]
-
-export const openRouterModels = {
-    'gpt-4o-mini': 'openai/gpt-4o-mini',
-    'gpt-4o': 'openai/gpt-4o',
-    'gpt-4.1': 'openai/gpt-4.1',
-    'claude-sonnet-4': 'anthropic/claude-sonnet-4',
-    'claude-opus-4': 'anthropic/claude-opus-4',
-    'gemini-2.5-flash': 'google/gemini-2.5-flash',
-    'google/gemini-2.5-pro': 'google/gemini-2.5-pro'
-}

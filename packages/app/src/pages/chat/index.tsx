@@ -1,8 +1,8 @@
 import { FunctionalComponent } from 'preact';
-import { Send, Search, Paperclip, MessageSquareText } from 'lucide-preact';
+import { Send, Search, Paperclip, MessageSquareText, Share } from 'lucide-preact';
 import GeminiIcon from "../../icons/Gemini.tsx";
 import { ModelSelectionModal } from './ModelSelectionModal.tsx';
-import { useSignal, useSignalEffect } from '@preact/signals';
+import { Signal, useSignal, useSignalEffect } from '@preact/signals';
 import { useCallback, useEffect, useMemo, useRef } from 'preact/hooks';
 import Sidebar from './Sidebar.tsx';
 import Examples from './Examples.tsx';
@@ -27,6 +27,7 @@ function ChatInterface() {
 	const isModelModalOpen = useSignal(false);
 	const selectedModel = useSignal(models.find(m => m.id === localStorage.getItem('selected_model_id')) ?? models.find(m => m.id === 'llama-3.1-8b-instant')!);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const settings = useSignal<ChatSettings>({ search: false, shortResponse: false });
 	const db = useDB();
 
 	useSignalEffect(() => {
@@ -49,6 +50,8 @@ function ChatInterface() {
 				role: 'user',
 				content: msg,
 				model: selectedModel.value.id,
+				search: settings.value.search ? 1 : 0,
+				short: settings.value.shortResponse ? 1 : 0,
 				error: null,
 				createdAt: Date.now()
 			})
@@ -148,12 +151,22 @@ function ChatInterface() {
 						<button
 							onClick={() => sendMessage()}
 							disabled={!message.value.trim()}
-							className={`absolute right-2 top-2 p-2 rounded-md ${message.value.trim()
+							className={`absolute right-2 mr-8 top-2 p-2 rounded-md ${message.value.trim()
 								? `text-purple-600 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700`
 								: 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
 								}`}
 						>
 							<Send size={18} />
+						</button>
+						<button
+							onClick={() => sendMessage()}
+							disabled={!message.value.trim()}
+							className={`absolute right-2 top-2 p-2 rounded-md ${message.value.trim()
+								? `text-purple-600 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700`
+								: 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+								}`}
+						>
+							<Share size={18} />
 						</button>
 					</div>
 
@@ -170,9 +183,7 @@ function ChatInterface() {
 								<selectedModel.value.icon height={16} width={16} />
 								<span className="ml-sm">{selectedModel.value.name + ' ' + selectedModel.value.version}</span>
 							</button>
-							<ChatControl name="Search" icon={Search} />
-							<ChatControl name="Attach" icon={Paperclip} />
-							<ChatControl name="Short Response" icon={MessageSquareText} />
+							<ChatControls model={selectedModel.value} settings={settings} />
 						</div>
 					</div>
 				</div>
@@ -189,10 +200,29 @@ function ChatInterface() {
 	);
 }
 
-function ChatControl(props: { name: string, icon: FunctionalComponent<{ size: number | string }> }) {
-	return <button className={`flex items-center p-2 rounded-full gap-1 cursor-pointer
+type ChatSettings = {
+	search: boolean;
+	shortResponse: boolean;
+}
+
+function ChatControls(props: { model: Model, settings: Signal<ChatSettings> }) {
+	const toggle = (key: keyof ChatSettings) => {
+		props.settings.value[key] = !props.settings.value[key];
+		props.settings.value = { ...props.settings.value };
+	}
+
+	return <>
+		{props.model.capabilities.search ? <ChatControl name="Search" onClick={() => toggle('search')} enabled={props.settings.value.search} icon={Search} /> : undefined}
+		{props.model.capabilities.files ? <ChatControl name="Attach" enabled={false} icon={Paperclip} /> : undefined}
+		<ChatControl name="Short Response" onClick={() => toggle('shortResponse')} enabled={props.settings.value.shortResponse} icon={MessageSquareText} />
+	</>
+}
+
+function ChatControl(props: { name: string, onClick?: () => void, enabled: boolean, icon: FunctionalComponent<{ size: number | string }> }) {
+	return <button onClick={props.onClick} className={`flex items-center p-2 rounded-full gap-1 cursor-pointer
 		bg-white hover:bg-gray-100 text-gray-700 hover:text-gray-900 shadow-sm border border-gray-200
 		dark:bg-transparent dark:border-gray-700 dark:border-2 dark:hover:bg-gray-800 dark:text-gray-300 dark:hover:text-white
+		${props.enabled ? '!border-purple-600' : ''}
 	`}>
 		<props.icon size={12} />
 		<span class="hidden lg:block">{props.name}</span>

@@ -48,6 +48,8 @@ export const chatMessage = createStore({
         content: z.string(),
         model: z.string(),
         error: z.string().nullable(),
+        search: z.int(),
+        short: z.int(),
         createdAt: z.int()
     }),
     indices: ["chatId"]
