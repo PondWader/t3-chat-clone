@@ -1,4 +1,5 @@
 node_modules
+user_content
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
