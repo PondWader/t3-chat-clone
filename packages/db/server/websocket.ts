@@ -200,6 +200,37 @@ function syncStore(db: Database, ws: ServerWebSocket<ConnData>, store: Store<any
                 }
                 ws.send(JSON.stringify(msg));
             }
+
+            const updates = await db.dbConn.queryAll('$updates', {
+                id: {
+                    ge: lastId
+                },
+                store: store.name,
+                userId: ws.data.user
+            }, { id: 'desc' }) as any[]
+
+            const updatedObjs = new Set(unsyncedObjs.map(v => v.$id));
+            for (const update of updates) {
+                if (updatedObjs.has(update.objectId)) continue;
+                updatedObjs.add(update.objectId);
+
+                const obj = await db.dbConn.query(update.store, { $id: update.objectId }) as any
+                if (obj !== null) {
+                    const id = obj.$id;
+                    cleanRecord(obj);
+
+                    const msg: Message<"push"> = {
+                        type: 'push',
+                        data: {
+                            object: obj,
+                            store: store.name,
+                            id: id
+                        }
+                    }
+
+                    ws.send(JSON.stringify(msg));
+                }
+            }
         }
     })
 }

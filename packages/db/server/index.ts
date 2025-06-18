@@ -62,42 +62,37 @@ export async function createDatabase(opts: CreateDatabaseOptions): Promise<Datab
             return userQueue.syncUserAction(user, async () => {
                 id = id ?? Bun.randomUUIDv7();
 
+                let existing: any;
                 if (store.type === 'singular') {
-                    const existing = await dbConn.query(store.name, {
+                    existing = await dbConn.query(store.name, {
                         $userId: user
                     }) as any
-                    if (existing !== null) {
-                        id = existing.$id;
-                        await dbConn.update(store.name, {
-                            $id: existing.$id,
-                            $userId: user
-                        }, { ...object as any })
-                    } else {
-                        await dbConn.create(store.name, {
-                            ...object as any,
-                            $id: id,
-                            $userId: user,
-                            $deleted: 0
-                        })
-                    }
                 } else {
-                    const existing = await dbConn.query(store.name, {
+                    existing = await dbConn.query(store.name, {
                         $userId: user,
                         $id: id
                     }) as any
-                    if (existing !== null) {
-                        await dbConn.update(store.name, {
-                            $id: existing.$id,
-                            $userId: user
-                        }, { ...object as any })
-                    } else {
-                        await dbConn.create(store.name, {
-                            ...object as any,
-                            $id: id,
-                            $userId: user,
-                            $deleted: 0
-                        })
-                    }
+                }
+
+                if (existing !== null) {
+                    id = existing.$id;
+                    await dbConn.update(store.name, {
+                        $id: existing.$id,
+                        $userId: user
+                    }, { ...object as any })
+                    await dbConn.create("$updates", {
+                        id: Bun.randomUUIDv7(),
+                        store: store.name,
+                        userId: user,
+                        objectId: existing.$id
+                    })
+                } else {
+                    await dbConn.create(store.name, {
+                        ...object as any,
+                        $id: id,
+                        $userId: user,
+                        $deleted: 0
+                    })
                 }
 
                 eventSource.publish(store, {

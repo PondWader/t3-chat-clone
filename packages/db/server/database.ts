@@ -68,6 +68,12 @@ export async function createMetaTables(dbConn: DatabaseDriverConn) {
         userId: { type: 'text' },
         objectId: { type: 'text' }
     })
+    await dbConn.createTableIfNotExists('$updates', {
+        id: { type: 'text', primaryKey: true },
+        store: { type: 'text' },
+        userId: { type: 'text' },
+        objectId: { type: 'text' }
+    })
 
     await dbConn.createIndexIfNotExists('$deletions', 'id', 'store', 'userId');
 }
