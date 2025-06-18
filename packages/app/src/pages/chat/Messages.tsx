@@ -11,7 +11,7 @@ import { branchChat } from "../../handlers/branchChat";
 import { useLocation } from "preact-iso";
 import Spinner from "../../components/Spinner";
 
-export default function Messages(props: { messages: Signal<ObjectInstance<storeObject<typeof chatMessage>>[]>, sendMessage: (msg: string, attachments: string[], settings: any) => void, message: Signal<string>, avatarUrl: Signal<string | undefined> }) {
+export default function Messages(props: { messages: Signal<ObjectInstance<storeObject<typeof chatMessage>>[]>, sendMessage: (msg: string, attachments: string[], settings: any) => void, message: Signal<string>, avatarUrl: Signal<string | undefined>, readOnly: boolean }) {
     const db = useDB();
 
     const lastMsg = props.messages.value[props.messages.value.length - 1];
@@ -30,7 +30,7 @@ export default function Messages(props: { messages: Signal<ObjectInstance<storeO
     return <div className="flex-1 overflow-y-auto p-6 flex-col-reverse" id="messages-display">
         <div className="max-w-[90vw] lg:max-w-[min(56rem,70vw)] mx-auto space-y-6 mb-[300px]">
             {props.messages.value.map((msg, i) => (
-                <Message branch={branch} avatarUrl={props.avatarUrl} msg={msg.object} id={msg.id} isLastMsg={i + 1 === props.messages.value.length} sendMessage={props.sendMessage} message={props.message} />
+                <Message branch={branch} avatarUrl={props.avatarUrl} msg={msg.object} id={msg.id} isLastMsg={i + 1 === props.messages.value.length} sendMessage={props.sendMessage} message={props.message} readOnly={props.readOnly} />
             ))}
 
             {/* Loading Message */}
@@ -66,7 +66,7 @@ export default function Messages(props: { messages: Signal<ObjectInstance<storeO
     </div>
 }
 
-function Message(props: { avatarUrl: Signal<string | undefined>, msg: storeObject<typeof chatMessage>, id: string, isLastMsg: boolean, sendMessage: (msg: string, attachments: string[], settings: any) => void, branch: (msg: storeObject<typeof chatMessage>) => Promise<string | null>, message: Signal<string> }) {
+function Message(props: { avatarUrl: Signal<string | undefined>, msg: storeObject<typeof chatMessage>, id: string, isLastMsg: boolean, sendMessage: (msg: string, attachments: string[], settings: any) => void, branch: (msg: storeObject<typeof chatMessage>) => Promise<string | null>, message: Signal<string>, readOnly: boolean }) {
     const db = useDB();
     const location = useLocation();
 
@@ -135,7 +135,7 @@ function Message(props: { avatarUrl: Signal<string | undefined>, msg: storeObjec
                         <button onClick={copy} class="cursor-pointer p-1 rounded transition-colors hover:bg-gray-100 text-gray-500 hover:text-gray-700 dark:hover:bg-gray-600 dark:text-gray-400 dark:hover:text-gray-200">
                             {copied.value ? <Check size={14} /> : <Copy size={14} />}
                         </button>
-                        {isUserMsg ? <>
+                        {isUserMsg ? !props.readOnly && <>
                             <button
                                 onClick={() => props.message.value = props.msg.content}
                                 class="cursor-pointer p-1 rounded transition-colors hover:bg-gray-100 text-gray-500 hover:text-gray-700 dark:hover:bg-gray-600 dark:text-gray-400 dark:hover:text-gray-200"

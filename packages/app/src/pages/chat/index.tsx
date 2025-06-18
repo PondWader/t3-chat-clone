@@ -126,7 +126,7 @@ export function ChatInterface({ chat, avatarUrl, readOnly }: { chat: ReturnType<
 	return (
 		<div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-800`}>
 			{/* Main Content Area */}
-			{chat.value && chat.value.length > 0 ? <Messages messages={chat} sendMessage={sendMessage} message={message} avatarUrl={avatarUrl} /> : <div className="flex-1 flex items-center justify-center p-4 lg:p-8">
+			{chat.value && chat.value.length > 0 ? <Messages messages={chat} sendMessage={sendMessage} message={message} avatarUrl={avatarUrl} readOnly={readOnly || false} /> : <div className="flex-1 flex items-center justify-center p-4 lg:p-8">
 				<Examples onMessage={m => {
 					message.value = m;
 					sendMessage();
