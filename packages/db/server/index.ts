@@ -24,7 +24,7 @@ export type Database = {
 
     push<T>(store: Store<T>, user: string, object: T, msgId?: string, id?: string): Promise<void>
     remove(store: Store<any>, user: string, objectId: string, msgId?: string): void
-    getAll<T>(store: Store<T>, user: string, key: keyof T, value: any): Promise<ObjectInstance<T>[]>
+    getAll<T>(store: Store<T>, user: string, key?: keyof T, value?: any): Promise<ObjectInstance<T>[]>
     partial<T>(store: Store<T>, user: string): PartialStream<T>
 }
 
@@ -132,8 +132,10 @@ export async function createDatabase(opts: CreateDatabaseOptions): Promise<Datab
                 });
             })
         },
-        async getAll<T>(store: Store<T>, user: string, key: keyof T, value: any) {
-            const records = await dbConn.queryAll(store.name, { $userId: user, [key]: value }, { $id: "asc" }) as T[]
+        async getAll<T>(store: Store<T>, user: string, key?: keyof T, value?: any) {
+            const condition: any = { $userId: user };
+            if (key) condition[key] = value;
+            const records = await dbConn.queryAll(store.name, condition, { $id: "asc" }) as T[]
             return records.map((r: any) => {
                 const id = r.$id;
                 cleanRecord(r);

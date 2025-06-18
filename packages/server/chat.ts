@@ -1,18 +1,27 @@
 import { groq } from "@ai-sdk/groq";
 import { storeObject } from "@t3-chat-clone/db";
-import { generateText } from "ai";
-import { chat, chatMessage } from "@t3-chat-clone/stores";
+import { generateText, LanguageModelV1 } from "ai";
+import { chat, chatMessage, settings } from "@t3-chat-clone/stores";
 import { Database } from "@t3-chat-clone/db/server";
 import { CoreMessage, streamText } from "ai";
-
-const SUPPORTED_GROQ_MODELS = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'qwen-qwq-32b']
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { openRouterModels, supportedGroqModels } from "./models";
 
 const titleModel = groq('llama-3.1-8b-instant');
 
 const BUFFER_MS = 20;
 
 export async function handleMessage(db: Database, id: string, user: string, object: storeObject<typeof chatMessage>) {
-    if (!SUPPORTED_GROQ_MODELS.includes(object.model)) return;
+    let model: LanguageModelV1;
+    if (supportedGroqModels.includes(object.model)) {
+        model = groq(object.model);
+    } else {
+        const byok = await loadByokModel(db, user, object.model);
+        if (typeof byok.error === 'string') {
+            return;
+        }
+        model = byok.instance;
+    };
 
     const history = await db.getAll(chatMessage, user, "chatId", object.chatId)
     const messages: CoreMessage[] = [];
@@ -28,7 +37,7 @@ export async function handleMessage(db: Database, id: string, user: string, obje
     }
 
     const { textStream } = streamText({
-        model: groq(object.model),
+        model,
         messages,
         onError: (err) => {
             console.error(err);
@@ -87,4 +96,20 @@ async function generateTitle(message: string) {
 
     if (text.length > 35) return message.replaceAll('\n', ' ').slice(0, 20);
     return text;
+}
+
+type Model = { error: string } | { error: undefined, instance: LanguageModelV1 }
+
+async function loadByokModel(db: Database, user: string, model: string): Promise<Model> {
+    const userSettings = await db.getAll(settings, user)
+    if (userSettings.length < 1 || userSettings[0].object.openRouterKey === null) return { error: 'OpenRouter API key has not been configured.' };
+
+    const orModelId = openRouterModels[model];
+    if (orModelId === undefined) return { error: 'Invalid model selection.' }
+
+    const openRouter = createOpenRouter({
+        apiKey: userSettings[0].object.openRouterKey
+    })
+
+    return { error: undefined, instance: openRouter.chat(orModelId) };
 }

@@ -1,17 +1,19 @@
-import { X, Search, Star, Eye, Globe, FileText, Zap, AlertTriangle } from 'lucide-preact';
-import { Signal, useComputed } from '@preact/signals';
+import { X, Search, Star, Eye, Globe, FileText, Zap, Brain } from 'lucide-preact';
+import { Signal, useComputed, useSignal } from '@preact/signals';
 import { Model, models } from '../../models';
+import { useSettings } from '../../db';
 
 function ModelCard(props: {
     model: Model;
+    disabled?: boolean;
     isSelected: boolean;
     onClick: () => void;
 }) {
     return (
         <button
             onClick={props.onClick}
-            disabled={props.model.requiresOpenRouterKey}
-            className={`relative p-4 rounded-lg border-2 text-left w-full ${props.model.requiresOpenRouterKey
+            disabled={props.disabled}
+            className={`relative p-4 rounded-lg border-2 text-left w-full ${props.disabled
                 ? `
                   bg-gray-100/50 border-gray-200 opacity-50 cursor-not-allowed
                     dark:bg-gray-800/50 dark:border-gray-700 dark:opacity-50
@@ -54,7 +56,7 @@ function ModelCard(props: {
                     <Zap size={14} className="text-gray-500 dark:text-gray-400" />
                 )}
                 {props.model.capabilities.reasoning && (
-                    <AlertTriangle size={14} className="text-gray-500 dark:text-gray-400" />
+                    <Brain size={14} className="text-gray-500 dark:text-gray-400" />
                 )}
             </div>
         </button>
@@ -72,6 +74,8 @@ export function ModelSelectionModal({
     onClose: () => void;
     onSelectModel: (model: Model) => void;
 }) {
+    const settings = useSettings();
+    const search = useSignal('');
     const wrapperClassName = useComputed(() => `fixed inset-0 z-50 flex items-center justify-center ${isOpen.value ? '' : 'hidden'}`);
 
     return (
@@ -106,6 +110,8 @@ export function ModelSelectionModal({
                         <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400`} />
                         <input
                             type="text"
+                            value={search.value}
+                            onInput={e => search.value = (e.target as any).value}
                             placeholder="Search models..."
                             className={`w-full pl-10 pr-4 py-3 rounded-lg text-sm
                               bg-gray-50 text-gray-900 placeholder-gray-500 
@@ -126,7 +132,7 @@ export function ModelSelectionModal({
                             </h3>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                            {models.map((model) => (
+                            {models.filter(m => m.name.toLowerCase().includes(search.value.toLowerCase()) && (settings.value.openRouterKey || !m.requiresOpenRouterKey)).map((model) => (
                                 <ModelCard
                                     key={model.id}
                                     model={model}
@@ -137,14 +143,14 @@ export function ModelSelectionModal({
                         </div>
                     </div>
 
-                    {/* Others Section */}
-                    <div>
+                    {!settings.value.openRouterKey && <div>
                         <h3 className={`text-sm font-medium mb-4 text-gray-700 dark:text-gray-300`}>
-                            Require OpenRouter key in settings
+                            Require OpenRouter Key in Settings
                         </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-                            {([] as Model[]).map((model) => (
+                            {models.filter(m => m.name.toLowerCase().includes(search.value.toLowerCase()) && m.requiresOpenRouterKey).map((model) => (
                                 <ModelCard
+                                    disabled={true}
                                     key={model.id}
                                     model={model}
                                     isSelected={selectedModel.value === model}
@@ -152,7 +158,7 @@ export function ModelSelectionModal({
                                 />
                             ))}
                         </div>
-                    </div>
+                    </div>}
                 </div>
             </div>
         </div >
