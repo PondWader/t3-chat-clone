@@ -3,7 +3,7 @@ import { account, chat, chatMessage, settings } from "@t3-chat-clone/stores";
 import { ComponentChild, createContext } from "preact";
 import { useContext, useEffect, useMemo } from "preact/hooks";
 import { useSignal, signal, useComputed, computed } from "@preact/signals";
-import type { storeObject, ObjectInstance, Store } from "@t3-chat-clone/db";
+import type { ObjectInstance, Store } from "@t3-chat-clone/db";
 
 const DBContext = createContext<Client | null>(null);
 

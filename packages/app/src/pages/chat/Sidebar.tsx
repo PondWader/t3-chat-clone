@@ -1,11 +1,10 @@
-import { Plus, Search, MessageSquare, Settings, Moon, Sun, X, PanelLeftOpen, LogIn, GitBranch } from 'lucide-preact';
+import { Plus, Search, MessageSquare, Settings, Moon, Sun, X, PanelLeftOpen, LogIn, GitBranch, Delete, Trash } from 'lucide-preact';
 import { currentTheme, toggleTheme } from '../../theme';
 import { Signal, useComputed, useSignal } from '@preact/signals';
-import { useAccount, useChats } from '../../db';
+import { useAccount, useChats, useDB } from '../../db';
 import Avatar from '../../icons/Avatar';
-import { ObjectInstance, storeObject } from '@t3-chat-clone/db';
 import { chat } from '@t3-chat-clone/stores';
-import { useRoute } from 'preact-iso';
+import { useLocation, useRoute } from 'preact-iso';
 
 type ChatSession = {
     id: string;
@@ -131,8 +130,21 @@ function UserProfile() {
 
 function Chats() {
     const route = useRoute();
+    const location = useLocation();
     const search = useSignal('');
     const groupedChats = useGroupedChats(search);
+    const db = useDB();
+
+    const handleDelete = (e: MouseEvent, objectId: string, chatId: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        db.remove(chat, objectId).catch(err => {
+            console.error('Error deleting chat:', err);
+        });
+        if (route.params.id === chatId) {
+            location.route('/');
+        }
+    }
 
     return <>
         {/* Search */}
@@ -177,10 +189,18 @@ function Chats() {
                                             key={chat.id}
                                             class="w-full text-left text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
                                         >
-                                            <div class={`mb-[2px] hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-lg ${route.path.startsWith('/chat/') && route.params.id === chat.object.chatId ? 'bg-gray-100 dark:bg-gray-800' : ''}`}>
+                                            <div class={`mb-[2px] group hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-lg ${route.path.startsWith('/chat/') && route.params.id === chat.object.chatId ? 'bg-gray-100 dark:bg-gray-800' : ''}`}>
                                                 <div className="flex items-center gap-2">
                                                     {chat.object.branch ? <GitBranch size={14} className="flex-shrink-0" /> : <MessageSquare size={14} className="flex-shrink-0" />}
-                                                    <span className="text-sm truncate">{chat.object.title}</span>
+                                                    <div className="flex items-center justify-between w-[100%]">
+                                                        <span className="text-sm truncate">{chat.object.title}</span>
+                                                        <Trash
+                                                            onClick={e => handleDelete(e, chat.id, chat.object.chatId)}
+                                                            size={16}
+                                                            class="opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity duration-200 text-gray-500 dark:text-gray-400 hover:text-red-500"
+                                                        />
+                                                    </div>
+
                                                 </div>
                                             </div>
                                         </a>
@@ -219,7 +239,7 @@ function useGroupedChats(search: Signal<string>) {
             Older: []
         };
 
-        chats.value.forEach((chat) => {
+        chats.value.sort((a, b) => b.object.createdAt - a.object.createdAt).forEach((chat) => {
             if (!chat.object.title || !chat.object.title.toLowerCase().includes(searchStr.toLowerCase())) {
                 return;
             }

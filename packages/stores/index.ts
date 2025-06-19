@@ -34,7 +34,7 @@ export const chat = createStore({
     }),
     indices: ['chatId'],
     validateClientAction(action, object) {
-        return action === "push" && object.branch === 1;
+        return (action === "push" && object.branch === 1) || action === "remove";
     },
 })
 
