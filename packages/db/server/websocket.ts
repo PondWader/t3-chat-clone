@@ -191,7 +191,10 @@ function syncStore(db: Database, ws: ServerWebSocket<ConnData>, store: Store<any
                 store: store.name,
                 userId: ws.data.user
             }) as any[]
+            // Maps object IDs to the deletion ID
+            const deletionMap = new Map<string, string>();
             for (const deletion of deletions) {
+                deletionMap.set(deletion.objectId, deletion.id);
                 const msg: Message<"remove"> = {
                     type: 'remove',
                     data: {
@@ -212,6 +215,9 @@ function syncStore(db: Database, ws: ServerWebSocket<ConnData>, store: Store<any
 
             const updatedObjs = new Set(unsyncedObjs.map(v => v.$id));
             for (const update of updates) {
+                // Check that the object was not deleted after it was updated
+                if (deletionMap.has(update.objectId) && deletionMap.get(update.objectId)! > update.id) continue;
+                // Check if the latest version of the object has already been sent
                 if (updatedObjs.has(update.objectId)) continue;
                 updatedObjs.add(update.objectId);
 
