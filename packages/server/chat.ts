@@ -9,25 +9,26 @@ import { openRouterModels, supportedGroqModels } from "./models";
 
 const titleModel = groq('llama-3.1-8b-instant');
 
-const BUFFER_MS = 20;
+export const BUFFER_MS = 20;
 
 export async function handleMessage(db: Database, id: string, user: string, object: storeObject<typeof chatMessage>) {
+    let isByok: boolean;
     let model: LanguageModelV1;
-    let isByok = false;
-    if (supportedGroqModels.includes(object.model)) {
-        model = groq(object.model);
-    } else {
-        isByok = true;
-        const byok = await loadByokModel(db, user, object.model, object.search > 0);
-        if (typeof byok.error === 'string') {
-            await db.push(chatMessage, user, {
-                ...object,
-                error: byok.error
-            }, undefined, id)
-            return;
+    try {
+        const m = await getModel(db, user, object.model, object.search > 0);
+        isByok = m.isByok
+        model = m.model;
+    } catch (err) {
+        let errorMsg = 'Something unexpected happened loading the model!';
+        if (typeof err === 'string') {
+            errorMsg = err;
         }
-        model = byok.instance;
-    };
+        await db.push(chatMessage, user, {
+            ...object,
+            error: err
+        }, undefined, id)
+        return;
+    }
 
     const history = await db.getAll(chatMessage, user, "chatId", object.chatId)
     const messages: CoreMessage[] = [];
@@ -111,12 +112,29 @@ export async function handleMessage(db: Database, id: string, user: string, obje
     })
 }
 
+export async function getModel(db: Database, user: string, modelId: string, search?: boolean) {
+    let model: LanguageModelV1;
+    let isByok = false;
+    if (supportedGroqModels.includes(modelId)) {
+        model = groq(modelId);
+    } else {
+        isByok = true;
+        const byok = await loadByokModel(db, user, modelId, search ?? false);
+        if (typeof byok.error === 'string') {
+            throw byok.error;
+        }
+        model = byok.instance;
+    };
+    return { model, isByok };
+}
+
 async function createNewChat(db: Database, user: string, chatId: string, firstMessage: string) {
     const createdAt = Date.now();
     const id = await db.push(chat, user, {
         chatId,
         title: 'New Chat',
         branch: 0,
+        writer: 0,
         createdAt
     })
     const title = await generateTitle(firstMessage);
@@ -124,6 +142,7 @@ async function createNewChat(db: Database, user: string, chatId: string, firstMe
         chatId,
         title,
         branch: 0,
+        writer: 0,
         createdAt: Date.now()
     }, undefined, id)
 }

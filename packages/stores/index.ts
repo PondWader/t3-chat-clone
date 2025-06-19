@@ -30,11 +30,30 @@ export const chat = createStore({
         chatId: z.string(),
         title: z.string().nullable(),
         branch: z.int(),
+        writer: z.int(),
         createdAt: z.int()
     }),
     indices: ['chatId'],
     validateClientAction(action, object) {
-        return (action === "push" && object.branch === 1) || action === "remove";
+        return (action === "push" && (object.branch === 1 || object.writer === 1)) || action === "remove";
+    },
+})
+
+export const writerUpdate = createStore({
+    name: 'writer_update',
+    type: 'event',
+    schema: z.object({
+        chatId: z.string(),
+        role: z.string(),
+        content: z.string(),
+        error: z.string().nullable(),
+        model: z.string(),
+        message: z.string().nullable(),
+        createdAt: z.int()
+    }),
+    indices: ['chatId'],
+    validateClientAction(action, object) {
+        return action === "push" && object.role === "user";
     },
 })
 

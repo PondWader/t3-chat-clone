@@ -12,6 +12,7 @@ import AccountSettings from './pages/settings/Account.tsx';
 import Sync from './pages/auth/Sync.tsx';
 import SyncConfirm from './pages/auth/SyncConfirm.tsx';
 import Shared from './pages/chat/Shared.tsx';
+import Writer from './pages/chat/Writer.tsx';
 
 export function App() {
 	return (
@@ -21,6 +22,7 @@ export function App() {
 					<Router>
 						<Route path="/" component={Chat} />
 						<Route path="/chat/:id" component={Chat} />
+						<Route path="/writer/:id" component={Writer} />
 						<Route path="/share/:user/:id" component={Shared} />
 						<Route path="/login" component={Login} />
 						<Route path="/sync" component={Sync} />

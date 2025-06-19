@@ -1,4 +1,4 @@
-import { Plus, Search, MessageSquare, Settings, Moon, Sun, X, PanelLeftOpen, LogIn, GitBranch, Delete, Trash } from 'lucide-preact';
+import { Plus, Search, MessageSquare, Settings, Moon, Sun, X, PanelLeftOpen, LogIn, GitBranch, Trash, ChevronDown, NotepadText } from 'lucide-preact';
 import { currentTheme, toggleTheme } from '../../theme';
 import { Signal, useComputed, useSignal } from '@preact/signals';
 import { useAccount, useChats, useDB } from '../../db';
@@ -67,13 +67,7 @@ export default function Sidebar() {
                         </div>
                     </div>
 
-                    <a href="/" className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg 
-                    dark:bg-purple-600 dark:hover:bg-purple-800 dark:text-white
-                    bg-purple-500 hover:bg-purple-600 text-white
-                `}>
-                        <Plus size={16} />
-                        <span className="text-sm font-medium">New Chat</span>
-                    </a>
+                    <NewChatButton />
                 </div>
 
                 <Chats />
@@ -185,13 +179,13 @@ function Chats() {
                                 <div className="space-y-1">
                                     {chats.map((chat) => (
                                         <a
-                                            href={`/chat/${chat.object.chatId}`}
+                                            href={`/${chat.object.writer ? `writer` : `chat`}/${chat.object.chatId}`}
                                             key={chat.id}
                                             class="w-full text-left text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
                                         >
-                                            <div class={`mb-[2px] group hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-lg ${route.path.startsWith('/chat/') && route.params.id === chat.object.chatId ? 'bg-gray-100 dark:bg-gray-800' : ''}`}>
+                                            <div class={`mb-[2px] group hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-lg ${(route.path.startsWith('/chat/') || route.path.startsWith('/writer/')) && route.params.id === chat.object.chatId ? 'bg-gray-100 dark:bg-gray-800' : ''}`}>
                                                 <div className="flex items-center gap-2">
-                                                    {chat.object.branch ? <GitBranch size={14} className="flex-shrink-0" /> : <MessageSquare size={14} className="flex-shrink-0" />}
+                                                    {chat.object.branch ? <GitBranch size={14} className="flex-shrink-0" /> : chat.object.writer ? <NotepadText size={14} className="flex-shrink-0" /> : <MessageSquare size={14} className="flex-shrink-0" />}
                                                     <div className="flex items-center justify-between w-[100%]">
                                                         <span className="text-sm truncate">{chat.object.title}</span>
                                                         <Trash
@@ -212,6 +206,76 @@ function Chats() {
             </div>
         </div>
     </>
+}
+
+function NewChatButton() {
+    const dropdownOpen = useSignal(false);
+
+    return <div class="relative">
+        <div className="flex rounded-xl overflow-hidden">
+            {/* Main Button */}
+            <a
+                href="/"
+                className="flex-1 flex items-center gap-3 px-3 py-2 ease-in-out 
+                    dark:bg-purple-600 dark:hover:bg-purple-700 dark:text-white
+                    bg-purple-500 hover:bg-purple-600 text-white"
+            >
+                <Plus size={18} />
+                <span className="text-sm font-medium">New Chat</span>
+            </a>
+
+            {/* Separator Line */}
+            <div className="w-px bg-purple-400 dark:bg-purple-500"></div>
+
+            {/* Dropdown Toggle Button */}
+            <button
+                onClick={() => dropdownOpen.value = !dropdownOpen.value}
+                className="cursor-pointer px-3 py-3 ease-in-out
+                        dark:bg-purple-600 dark:hover:bg-purple-700 dark:text-white
+                        bg-purple-500 hover:bg-purple-600 text-white"
+            >
+                <ChevronDown
+                    size={16}
+                    className={`transition-transform duration-200 ${dropdownOpen.value ? 'rotate-180' : ''}`}
+                />
+            </button>
+        </div>
+
+        <NewChatDropDown displayed={dropdownOpen} />
+    </div>
+}
+
+function NewChatDropDown(props: { displayed: Signal<boolean> }) {
+    const db = useDB();
+    const location = useLocation();
+
+    const newWriter = () => {
+        const chatId = crypto.randomUUID();
+        db.push(chat, {
+            chatId,
+            title: 'New Writer',
+            branch: 0,
+            writer: 1,
+            createdAt: Date.now()
+        })
+        location.route(`/writer/${chatId}`);
+        props.displayed.value = false;
+    }
+
+    return <div className={`absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-700 rounded-xl shadow-xl border border-slate-200 dark:border-slate-600 z-10 overflow-hidden transition-all duration-200 ease-in-out ${props.displayed.value
+        ? 'opacity-100 transform translate-y-0'
+        : 'opacity-0 transform -translate-y-2 pointer-events-none'
+        }`}>
+        <div className="py-2">
+            <button
+                onClick={newWriter}
+                className="cursor-pointer w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors duration-150 text-slate-700 dark:text-slate-200"
+            >
+                <NotepadText size={16} />
+                <span className="text-sm font-medium">New Writer</span>
+            </button>
+        </div>
+    </div>
 }
 
 function useGroupedChats(search: Signal<string>) {

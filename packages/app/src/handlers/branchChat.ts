@@ -19,6 +19,7 @@ export async function branchChat(db: Client, chatId: string, messages: storeObje
         chatId: newChatId,
         title: chatObj[0].object.title,
         branch: 1,
+        writer: 0,
         createdAt: Date.now()
     })
 
