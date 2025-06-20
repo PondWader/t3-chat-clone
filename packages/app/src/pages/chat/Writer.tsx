@@ -11,6 +11,8 @@ import Spinner from "../../components/Spinner";
 import Timeline from "../../components/Timeline";
 import { ObjectInstance, storeObject } from "@t3-chat-clone/db";
 import { Client } from "@t3-chat-clone/db/client";
+import ViewSwitch from "../../components/ViewSwitch";
+import Llama from "../../icons/Llama";
 
 const SAVE_BUFFER_MS = 600;
 
@@ -31,6 +33,7 @@ function WriterInterface(props: { chatId: string }) {
     const isSaved = useMemo(() => signal(true), [props.chatId]);
     const saveTimeout = useRef<number>();
     const lastEdit = useRef(0);
+    const viewSelection = useSignal<'text' | 'history'>('text');
 
     useEffect(() => {
         effect(() => {
@@ -84,8 +87,8 @@ function WriterInterface(props: { chatId: string }) {
 
     return <div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-800`}>
         <div class="flex-1 flex-row flex items-center justify-center p-1 lg:p-2">
-            <div className="w-[90vw] lg:max-[1349px]:w-[min(90rem,75vw)] min-[1350px]:w-[min(90rem,60vw)] mx-auto px-1 sm:px-6 lg:px-4 py-6">
-                <div className={`dark:bg-slate-900 bg-white rounded-xl shadow-lg`}>
+            <div className="w-[90vw] lg:max-[1360px]:w-[min(90rem,75vw)] min-[1360px]:w-[min(90rem,60vw)] mx-auto px-1 sm:px-6 lg:px-4 py-6">
+                <div className={`dark:bg-slate-900 bg-white rounded-xl shadow-lg ${viewSelection.value === 'history' ? 'max-[1360px]:hidden' : ''}`}>
                     <div className="p-6">
                         <textarea
                             value={text.value}
@@ -96,27 +99,34 @@ function WriterInterface(props: { chatId: string }) {
                                 text.value = (e.target as any).value;
                             }}
                             placeholder="Start typing your document..."
-                            className={`w-full h-[70vh] md:h-[min(600px,60vh)] resize-none border-none outline-none dark:bg-slate-900 dark:text-white dark:placeholder-gray-400 bg-white text-gray-900 placeholder-gray-500 text-base leading-relaxed`}
+                            className={`w-full h-[55vh] md:h-[min(600px,60vh)] resize-none border-none outline-none dark:bg-slate-900 dark:text-white dark:placeholder-gray-400 bg-white text-gray-900 placeholder-gray-500 text-base leading-relaxed`}
                             style={{ fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace' }}
                         />
                     </div>
                 </div>
+                <div class={`w-full h-[calc(55vh+1.7rem)] mt-6 md:h-[calc(min(600px,60vh)+1.7rem)] overflow-y-hidden ${viewSelection.value === 'text' ? 'hidden' : 'min-[1360px]:hidden'}`}>
+                    <UpdateTimeline updates={updates.value} isLoading={isLoading.value} text={text} />
+                </div>
 
                 <div class="flex justify-end mt-2">
+                    <div class="mr-4 min-[1360px]:hidden">
+                        <ViewSwitch left="text" right="History" activeView={viewSelection.value === 'text' ? "left" : "right"} onViewChange={(side) => {
+                            viewSelection.value = side === 'left' ? 'text' : 'history';
+                        }} />
+                    </div>
                     {isSaved.value ? <p class="text-green-600"><Check class="inline" size={18} /> Saved</p>
                         : <p class="italic text-gray-400">Saving...</p>}
-
                 </div>
             </div>
 
-            <div class="max-[1350px]:hidden min-[2450px]:mr-20">
+            <div class="max-[1360px]:hidden min-[2450px]:mr-20">
                 <UpdateTimeline updates={updates.value} isLoading={isLoading.value} text={text} />
             </div>
         </div>
 
 
         <Input chatId={props.chatId} isLoading={isLoading} text={text} />
-    </div >
+    </div>
 }
 
 function UpdateTimeline(props: {

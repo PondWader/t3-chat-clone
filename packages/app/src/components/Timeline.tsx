@@ -12,7 +12,7 @@ export type TimelineEvent = {
 
 export default function Timeline(props: { events: TimelineEvent[] }) {
     return (
-        <div className="w-[20vw] min-[1500px]:w-[22vw] min-[1800px]:w-[25vw] mx-auto p-3 flex flex-col h-[min(96,60vh)] md:h-[min(600px,60vh)] overflow-y-scroll">
+        <div className="min-[1360px]:w-[20vw] min-[1500px]:w-[22vw] min-[1800px]:w-[25vw] mx-auto p-3 flex flex-col h-[min(96,60vh)] md:h-[min(600px,60vh)] overflow-y-scroll">
             <div className="relative">
                 {/* Main vertical line */}
                 <div className="absolute left-6 mb-8 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-600"></div>
