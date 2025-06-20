@@ -40,6 +40,14 @@ export function useChats() {
     return useComputed(() => [...chats.value.values()]);
 }
 
+
+
+export function useWriterUpdates(chatId: string | null) {
+    const writers = useStore(writerUpdate, 'chatId', chatId);
+    return useMemo(() => computed(() => [...writers.value.values()]
+        .sort((a, b) => b.object.createdAt - a.object.createdAt)), [chatId]);
+}
+
 export function useStore<T>(store: Store<T>, key?: keyof T, value?: any, init?: Map<string, ObjectInstance<T>>) {
     const db = useDB();
     const items = useMemo(() => signal<Map<string, ObjectInstance<T>>>(init ?? new Map()), [store, key, value]);

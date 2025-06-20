@@ -1,13 +1,15 @@
 import { useRoute } from "preact-iso";
 import Sidebar from "./Sidebar";
-import { useDB } from "../../db";
-import { Signal, useSignal, useSignalEffect } from "@preact/signals";
+import { useDB, useWriterUpdates } from "../../db";
+import { effect, signal, Signal, useComputed, useSignal, useSignalEffect } from "@preact/signals";
 import { Send } from "lucide-preact";
 import { models } from "../../models";
 import { ModelSelectionModal } from "./ModelSelectionModal";
-import { useEffect, useRef } from "preact/hooks";
+import { useEffect, useMemo, useRef } from "preact/hooks";
 import { writerUpdate } from "@t3-chat-clone/stores";
 import Spinner from "../../components/Spinner";
+import Timeline from "../../components/Timeline";
+import { ObjectInstance, storeObject } from "@t3-chat-clone/db";
 
 export default function Writer() {
     const route = useRoute();
@@ -20,28 +22,24 @@ export default function Writer() {
 
 function WriterInterface(props: { chatId: string }) {
     const db = useDB();
-    const text = useSignal('');
-    const isLoading = useSignal(false);
+    const isLoading = useMemo(() => signal(false), [props.chatId]);
+    const updates = useWriterUpdates(props.chatId);
+    const text = useMemo(() => signal(''), [props.chatId]);
 
     useEffect(() => {
-        db.getAllMatches(writerUpdate, 'chatId', props.chatId)
-            .then(objects => {
-                if (objects.length === 0) return;
-                let latestUpdate = objects[0];
-                for (const obj of objects) {
-                    if (obj.object.createdAt > latestUpdate.object.createdAt) {
-                        latestUpdate = obj;
-                    }
-                }
-                text.value = latestUpdate.object.content;
-            })
+        effect(() => {
+            if (updates.value.length > 0) {
+                text.value = updates.value[0].object.content;
+            } else {
+                text.value = "";
+            }
+        });
+    }, [props.chatId])
 
+    useEffect(() => {
         const sub = db.subscribe(writerUpdate, e => {
             if (e.action === 'push' && e.object.role === "assistant") {
                 isLoading.value = false;
-            }
-            if ((e.action === 'push' || e.action === 'partial') && e.object.role === "assistant") {
-                text.value = e.object.content;
             }
         });
 
@@ -49,8 +47,8 @@ function WriterInterface(props: { chatId: string }) {
     }, [props.chatId]);
 
     return <div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-800`}>
-        <div class="flex-1 flex items-center justify-center p-1 lg:p-4">
-            <div className="w-[90vw] lg:w-[min(90rem,75vw)] mx-auto px-1 sm:px-6 lg:px-8 py-6">
+        <div class="flex-1 flex-row flex items-center justify-center p-1 lg:p-2">
+            <div className="w-[90vw] lg:max-[1349px]:w-[min(90rem,75vw)] min-[1350px]:w-[min(90rem,60vw)] mx-auto px-1 sm:px-6 lg:px-4 py-6">
                 <div className={`dark:bg-slate-900 bg-white rounded-xl shadow-lg`}>
                     <div className="p-6">
                         <textarea
@@ -60,17 +58,36 @@ function WriterInterface(props: { chatId: string }) {
                                 text.value = (e.target as any).value;
                             }}
                             placeholder="Start typing your document..."
-                            className={`w-full h-96 md:h-[600px] resize-none border-none outline-none dark:bg-slate-900 dark:text-white dark:placeholder-gray-400 bg-white text-gray-900 placeholder-gray-500 text-base leading-relaxed`}
+                            className={`w-full h-[70vh] md:h-[min(600px,60vh)] resize-none border-none outline-none dark:bg-slate-900 dark:text-white dark:placeholder-gray-400 bg-white text-gray-900 placeholder-gray-500 text-base leading-relaxed`}
                             style={{ fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace' }}
                         />
                     </div>
                 </div>
             </div>
+
+            <div class="max-[1350px]:hidden min-[2450px]:mr-20">
+                <UpdateTimeline updates={updates.value} isLoading={isLoading.value} />
+            </div>
         </div>
+
 
         <Input chatId={props.chatId} isLoading={isLoading} text={text} />
     </div >
+}
 
+function UpdateTimeline(props: { updates: ObjectInstance<storeObject<typeof writerUpdate>>[], isLoading: boolean }) {
+    const filtered = props.updates.filter(u => u.object.role === "user" && u.object.message);
+
+    return <Timeline events={filtered.map((u, i) => (
+        {
+            key: u.id,
+            content: props.isLoading && i === 0 ? (<div class="flex flex-row">
+                <Spinner />
+                <span class="ml-2">{u.object.message}</span>
+            </div>) : u.object.message,
+            icon: models.find(m => m.id === u.object.model)!.icon
+        }
+    ))} />
 }
 
 function Input(props: { chatId: string, isLoading: Signal<boolean>, text: Signal<string> }) {
