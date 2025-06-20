@@ -2,10 +2,12 @@ import { Clock, Pencil } from 'lucide-preact';
 import { ComponentChild, FunctionalComponent } from 'preact';
 
 export type TimelineEvent = {
-    content: ComponentChild,
-    key: any,
-    icon: FunctionalComponent<{ width: number; height: number; }>,
-    date: Date
+    content: ComponentChild;
+    key: any;
+    icon: FunctionalComponent<{ width: number; height: number; }>;
+    date: Date;
+    onClick: () => void;
+    selected: boolean;
 };
 
 export default function Timeline(props: { events: TimelineEvent[] }) {
@@ -23,7 +25,8 @@ export default function Timeline(props: { events: TimelineEvent[] }) {
                         </div>
 
                         {/* Content */}
-                        <div className="ml-6 flex-1 bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 border border-gray-100 dark:border-gray-500 group-hover:shadow-lg">
+                        <div onClick={event.onClick} className={`cursor-pointer ml-6 flex-1 bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 border group-hover:shadow-lg
+                            ${event.selected ? 'border-purple-400 dark:border-purple-600' : 'border-gray-100 dark:border-gray-500 hover:border-gray-400'}`}>
                             <p className="text-gray-600 dark:text-gray-200 mb-4 leading-relaxed">
                                 {event.content}
                             </p>

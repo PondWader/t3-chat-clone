@@ -110,7 +110,7 @@ function WriterInterface(props: { chatId: string }) {
             </div>
 
             <div class="max-[1350px]:hidden min-[2450px]:mr-20">
-                <UpdateTimeline updates={updates.value} isLoading={isLoading.value} />
+                <UpdateTimeline updates={updates.value} isLoading={isLoading.value} text={text} />
             </div>
         </div>
 
@@ -119,8 +119,14 @@ function WriterInterface(props: { chatId: string }) {
     </div >
 }
 
-function UpdateTimeline(props: { updates: ObjectInstance<storeObject<typeof writerUpdate>>[], isLoading: boolean }) {
+function UpdateTimeline(props: {
+    updates: ObjectInstance<storeObject<typeof writerUpdate>>[],
+    isLoading: boolean,
+    text: Signal<string>
+}) {
     const filtered = props.updates.filter(u => u.object.role === "user" && u.object.message);
+    const prevText = useRef<string>();
+    const selectedUpdate = useSignal<string>();
 
     return <Timeline events={filtered.map((u, i) => (
         {
@@ -130,7 +136,30 @@ function UpdateTimeline(props: { updates: ObjectInstance<storeObject<typeof writ
                 <span class="ml-2">{u.object.message}</span>
             </div>) : u.object.message,
             icon: models.find(m => m.id === u.object.model)!.icon,
-            date: new Date(u.object.createdAt)
+            date: new Date(u.object.createdAt),
+            selected: selectedUpdate.value === u.id,
+            onClick: () => {
+                if (selectedUpdate.value === u.id) {
+                    selectedUpdate.value = undefined;
+                    props.text.value = prevText.current!;
+                    return;
+                }
+
+                // @ts-ignore - doesn't seem to have types for findLast
+                const nextUpdate = props.updates.findLast(v => v.object.createdAt > u.object.createdAt && v.object.role === "assistant");
+                if (!nextUpdate) return;
+                prevText.current = props.text.value;
+                props.text.value = nextUpdate.object.content;
+                selectedUpdate.value = u.id;
+
+                // Upon the next text update, remove the selection of the event
+                const dispose = effect(() => {
+                    if (props.text.value !== nextUpdate.object.content && selectedUpdate.value === u.id) {
+                        dispose();
+                        selectedUpdate.value = undefined;
+                    }
+                });
+            }
         }
     ))} />
 }
