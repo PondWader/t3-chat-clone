@@ -25,7 +25,7 @@ export async function handleMessage(db: Database, id: string, user: string, obje
         }
         await db.push(chatMessage, user, {
             ...object,
-            error: err
+            error: errorMsg
         }, undefined, id)
         return;
     }
@@ -147,7 +147,7 @@ async function createNewChat(db: Database, user: string, chatId: string, firstMe
     }, undefined, id)
 }
 
-async function generateTitle(message: string) {
+export async function generateTitle(message: string) {
     // Prompt taken from https://github.com/vercel/ai-chatbot/blob/f18af236a0946c808650967bef7681182ddfd1f6/app/(chat)/actions.ts#L18 (Apache license: https://github.com/vercel/ai-chatbot/blob/f18af236a0946c808650967bef7681182ddfd1f6/LICENSE)
     const { text } = await generateText({
         model: titleModel,

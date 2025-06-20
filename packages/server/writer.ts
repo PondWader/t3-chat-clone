@@ -1,8 +1,8 @@
 import { storeObject } from "@t3-chat-clone/db";
 import { Database } from "@t3-chat-clone/db/server";
-import { writerUpdate } from "@t3-chat-clone/stores";
+import { chat, writerUpdate } from "@t3-chat-clone/stores";
 import { APICallError, CoreMessage, LanguageModelV1, streamText } from "ai";
-import { BUFFER_MS, getModel } from "./chat";
+import { BUFFER_MS, generateTitle, getModel } from "./chat";
 
 export async function handleWriterUpdate(db: Database, id: string, user: string, object: storeObject<typeof writerUpdate>) {
     if (!object.message) return;
@@ -20,10 +20,12 @@ export async function handleWriterUpdate(db: Database, id: string, user: string,
         }
         await db.push(writerUpdate, user, {
             ...object,
-            error: err
+            error: errorMsg
         }, undefined, id)
         return;
     }
+
+    titleChat(db, user, object.chatId, object.message);
 
     const messages: CoreMessage[] = [];
     if (object.content) {
@@ -100,4 +102,15 @@ export async function handleWriterUpdate(db: Database, id: string, user: string,
         error: null,
         message: null
     })
+}
+
+async function titleChat(db: Database, user: string, chatId: string, msg: string) {
+    const chats = await db.getAll(chat, user, 'chatId', chatId);
+    const writerChat = chats[0];
+    if (writerChat === undefined || (writerChat.object.title !== null && writerChat.object.title !== 'New Writer')) return;
+    const title = await generateTitle(msg);
+    await db.push(chat, user, {
+        ...writerChat.object,
+        title
+    }, undefined, writerChat.id);
 }

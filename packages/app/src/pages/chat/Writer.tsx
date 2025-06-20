@@ -46,7 +46,7 @@ function WriterInterface(props: { chatId: string }) {
         });
 
         return () => sub.unsubscribe();
-    }, []);
+    }, [props.chatId]);
 
     return <div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-800`}>
         <div class="flex-1 flex items-center justify-center p-1 lg:p-4">
