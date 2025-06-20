@@ -4,6 +4,7 @@ import Qwen from "./icons/Qwen";
 import GPT from "./icons/GPT";
 import Gemini from "./icons/Gemini";
 import Claude from "./icons/Claude";
+import DeepSeek from "./icons/DeepSeek";
 
 export type Model = {
     id: string;
@@ -124,6 +125,19 @@ export const models: Model[] = [
         requiresOpenRouterKey: true
     },
     {
+        id: 'gemini-2.5-flash-lite',
+        name: 'Gemini',
+        version: '2.5 Flash Lite',
+        icon: Gemini,
+        capabilities: {
+            speed: true,
+            reasoning: true,
+            search: true,
+            images: true
+        },
+        requiresOpenRouterKey: true
+    },
+    {
         id: 'gemini-2.5-pro',
         name: 'Gemini',
         version: '2.5 Pro',
@@ -132,6 +146,17 @@ export const models: Model[] = [
             reasoning: true,
             search: true,
             images: true
+        },
+        requiresOpenRouterKey: true
+    },
+    {
+        id: 'deepseek-r1',
+        name: 'DeepSeek',
+        version: 'R1',
+        icon: DeepSeek,
+        capabilities: {
+            reasoning: true,
+            search: true
         },
         requiresOpenRouterKey: true
     }

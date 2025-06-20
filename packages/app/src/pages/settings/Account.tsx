@@ -29,7 +29,7 @@ export default function AccountSettings() {
                         </div>}
                     <div>
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white">{account.value.displayName}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Free Plan</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Authenticated with Discord</p>
                     </div>
                 </div>
 
@@ -46,9 +46,6 @@ export default function AccountSettings() {
                         readOnly
                         class="w-full px-4 py-3 rounded-lg border bg-gray-50 border-gray-300 text-gray-600 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 cursor-not-allowed"
                     />
-                    <p className="text-xs mt-1 text-gray-400 dark:text-gray-500">
-                        Authenticated with Discord.
-                    </p>
                 </div>
 
                 {/* Email */}

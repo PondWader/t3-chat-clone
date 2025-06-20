@@ -7,5 +7,7 @@ export const openRouterModels = {
     'claude-sonnet-4': 'anthropic/claude-sonnet-4',
     'claude-opus-4': 'anthropic/claude-opus-4',
     'gemini-2.5-flash': 'google/gemini-2.5-flash',
-    'gemini-2.5-pro': 'google/gemini-2.5-pro'
+    'gemini-2.5-flash-lite': 'google/gemini-2.5-flash-lite-preview-06-17',
+    'gemini-2.5-pro': 'google/gemini-2.5-pro',
+    'deepseek-r1': 'deepseek/deepseek-r1'
 }
