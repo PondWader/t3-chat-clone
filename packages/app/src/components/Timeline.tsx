@@ -1,7 +1,14 @@
 import { Clock, Pencil } from 'lucide-preact';
 import { ComponentChild, FunctionalComponent } from 'preact';
 
-export default function Timeline(props: { events: { content: ComponentChild, key: any, icon: FunctionalComponent<{ width: number; height: number; }> }[] }) {
+export type TimelineEvent = {
+    content: ComponentChild,
+    key: any,
+    icon: FunctionalComponent<{ width: number; height: number; }>,
+    date: Date
+};
+
+export default function Timeline(props: { events: TimelineEvent[] }) {
     return (
         <div className="w-[20vw] min-[1500px]:w-[22vw] min-[1800px]:w-[25vw] mx-auto p-3 flex flex-col h-[min(96,60vh)] md:h-[min(600px,60vh)] overflow-y-scroll">
             <div className="relative">
@@ -24,7 +31,7 @@ export default function Timeline(props: { events: { content: ComponentChild, key
                             <div className="text-sm text-gray-500">
                                 <div className="flex items-center gap-1">
                                     <Clock className="w-4 h-4" />
-                                    <span>{new Date().toLocaleString()}</span>
+                                    <span>{event.date.toLocaleString()}</span>
                                 </div>
 
                             </div>

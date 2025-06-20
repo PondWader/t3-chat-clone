@@ -53,7 +53,7 @@ export const writerUpdate = createStore({
     }),
     indices: ['chatId'],
     validateClientAction(action, object) {
-        return action === "push" && object.role === "user";
+        return object.role === "user";
     },
 })
 

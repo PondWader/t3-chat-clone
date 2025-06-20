@@ -1,8 +1,8 @@
 import { useRoute } from "preact-iso";
 import Sidebar from "./Sidebar";
 import { useDB, useWriterUpdates } from "../../db";
-import { effect, signal, Signal, useComputed, useSignal, useSignalEffect } from "@preact/signals";
-import { Send } from "lucide-preact";
+import { effect, signal, Signal, useSignal, useSignalEffect } from "@preact/signals";
+import { Check, Send } from "lucide-preact";
 import { models } from "../../models";
 import { ModelSelectionModal } from "./ModelSelectionModal";
 import { useEffect, useMemo, useRef } from "preact/hooks";
@@ -10,6 +10,9 @@ import { writerUpdate } from "@t3-chat-clone/stores";
 import Spinner from "../../components/Spinner";
 import Timeline from "../../components/Timeline";
 import { ObjectInstance, storeObject } from "@t3-chat-clone/db";
+import { Client } from "@t3-chat-clone/db/client";
+
+const SAVE_BUFFER_MS = 600;
 
 export default function Writer() {
     const route = useRoute();
@@ -25,26 +28,59 @@ function WriterInterface(props: { chatId: string }) {
     const isLoading = useMemo(() => signal(false), [props.chatId]);
     const updates = useWriterUpdates(props.chatId);
     const text = useMemo(() => signal(''), [props.chatId]);
+    const isSaved = useMemo(() => signal(true), [props.chatId]);
+    const saveTimeout = useRef<number>();
+    const lastEdit = useRef(0);
 
     useEffect(() => {
         effect(() => {
             if (updates.value.length > 0) {
-                text.value = updates.value[0].object.content;
+                const latest = updates.value[0].object;
+                if (latest.role !== "user" || latest.createdAt > lastEdit.current) {
+                    text.value = latest.content;
+                }
             } else {
                 text.value = "";
             }
         });
-    }, [props.chatId])
 
-    useEffect(() => {
+        effect(() => {
+            // Track every text change
+            text.value;
+            if (!isSaved.value) {
+                if (saveTimeout.current !== undefined) clearTimeout(saveTimeout.current);
+
+                saveTimeout.current = setTimeout(() => {
+                    const txt = text.value;
+                    const createdAt = Date.now();
+
+                    db.push(writerUpdate, {
+                        chatId: props.chatId,
+                        role: 'user',
+                        content: txt,
+                        error: null,
+                        model: "",
+                        message: null,
+                        createdAt
+                    }).then(() => {
+                        if (txt == text.value) {
+                            isSaved.value = true;
+                        }
+                        cleanHistory(db, createdAt, updates.value).catch(() => { });
+                    })
+                }, SAVE_BUFFER_MS) as any as number;
+            }
+        });
+
         const sub = db.subscribe(writerUpdate, e => {
             if (e.action === 'push' && e.object.role === "assistant") {
                 isLoading.value = false;
+                isSaved.value = true;
             }
         });
 
         return () => sub.unsubscribe();
-    }, [props.chatId]);
+    }, [props.chatId])
 
     return <div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-800`}>
         <div class="flex-1 flex-row flex items-center justify-center p-1 lg:p-2">
@@ -54,7 +90,9 @@ function WriterInterface(props: { chatId: string }) {
                         <textarea
                             value={text.value}
                             readOnly={isLoading.value}
-                            onChange={e => {
+                            onInput={(e) => {
+                                isSaved.value = false;
+                                lastEdit.current = Date.now();
                                 text.value = (e.target as any).value;
                             }}
                             placeholder="Start typing your document..."
@@ -62,6 +100,12 @@ function WriterInterface(props: { chatId: string }) {
                             style={{ fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace' }}
                         />
                     </div>
+                </div>
+
+                <div class="flex justify-end mt-2">
+                    {isSaved.value ? <p class="text-green-600"><Check class="inline" size={18} /> Saved</p>
+                        : <p class="italic text-gray-400">Saving...</p>}
+
                 </div>
             </div>
 
@@ -85,7 +129,8 @@ function UpdateTimeline(props: { updates: ObjectInstance<storeObject<typeof writ
                 <Spinner />
                 <span class="ml-2">{u.object.message}</span>
             </div>) : u.object.message,
-            icon: models.find(m => m.id === u.object.model)!.icon
+            icon: models.find(m => m.id === u.object.model)!.icon,
+            date: new Date(u.object.createdAt)
         }
     ))} />
 }
@@ -161,7 +206,6 @@ function Input(props: { chatId: string, isLoading: Signal<boolean>, text: Signal
                     onKeyPress={handleKeyPress}
                     onKeyDown={e => {
                         if (e.key === 'Tab') {
-                            console.log('tab')
                             e.preventDefault();
                             message.value += '    ';
                         }
@@ -207,4 +251,17 @@ function Input(props: { chatId: string, isLoading: Signal<boolean>, text: Signal
             isModelModalOpen.value = false;
         }} />
     </div>
+}
+
+/**
+ * Cleans update history by removing unnecessary updates
+ * @param before 
+ * @param updates 
+ */
+async function cleanHistory(db: Client, before: number, updates: ObjectInstance<storeObject<typeof writerUpdate>>[]) {
+    await Promise.all(
+        updates
+            .filter(u => u.object.createdAt < before && !u.object.message && u.object.role === "user")
+            .map(u => db.remove(writerUpdate, u.id))
+    )
 }
