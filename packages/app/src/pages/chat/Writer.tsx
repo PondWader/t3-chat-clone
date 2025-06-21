@@ -99,12 +99,12 @@ function WriterInterface(props: { chatId: string }) {
                                 text.value = (e.target as any).value;
                             }}
                             placeholder="Start typing your document..."
-                            className={`w-full h-[55vh] md:h-[min(600px,60vh)] resize-none border-none outline-none dark:bg-slate-900 dark:text-white dark:placeholder-gray-400 bg-white text-gray-900 placeholder-gray-500 text-base leading-relaxed`}
+                            className={`w-full h-[55dvh] md:h-[min(600px,60dvh)] resize-none border-none outline-none dark:bg-slate-900 dark:text-white dark:placeholder-gray-400 bg-white text-gray-900 placeholder-gray-500 text-base leading-relaxed`}
                             style={{ fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace' }}
                         />
                     </div>
                 </div>
-                <div class={`w-full h-[calc(55vh+1.7rem)] mt-6 md:h-[calc(min(600px,60vh)+1.7rem)] overflow-y-hidden ${viewSelection.value === 'text' ? 'hidden' : 'min-[1360px]:hidden'}`}>
+                <div class={`w-full h-[calc(55dvh+1.7rem)] mt-6 md:h-[calc(min(600px,60dvh)+1.7rem)] overflow-y-hidden ${viewSelection.value === 'text' ? 'hidden' : 'min-[1360px]:hidden'}`}>
                     <UpdateTimeline updates={updates.value} isLoading={isLoading.value} text={text} />
                 </div>
 
