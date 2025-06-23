@@ -19,7 +19,7 @@ An open source AI chat app built for the t3.chat cloneathon. Built for a snappy,
 ##### Extra:
 
 ✔ Sync between devices without an account by scanning QR code/entering link.  
-✔ Short response mode
+✔ Short response mode  
 ✔ Writer mode
 
 ## Documentation
