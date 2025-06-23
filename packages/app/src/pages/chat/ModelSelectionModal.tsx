@@ -3,6 +3,15 @@ import { Signal, useComputed, useSignal } from '@preact/signals';
 import { Model, models } from '../../models';
 import { useSettings } from '../../db';
 
+declare global {
+    interface Window {
+        config: {
+            groqEnabled: boolean;
+            openRouterEnabled: boolean;
+        };
+    }
+}
+
 function ModelCard(props: {
     model: Model;
     disabled?: boolean;
@@ -78,6 +87,35 @@ export function ModelSelectionModal({
     const search = useSignal('');
     const wrapperClassName = useComputed(() => `fixed inset-0 z-50 flex items-center justify-center ${isOpen.value ? '' : 'hidden'}`);
 
+    // Filter models into categories based on availability
+    const filteredModels = useComputed(() => {
+        const searchTerm = search.value.toLowerCase();
+        const available: Model[] = [];
+        const requireGroq: Model[] = [];
+        const requireOpenRouter: Model[] = [];
+
+        models.filter(m => (m.name + ' ' + m.version).toLowerCase().includes(searchTerm)).forEach(model => {
+            // Check if model is available (server has key OR user has key)
+            const groqAvailable = window.config?.groqEnabled || settings.value.groqKey;
+            const openRouterAvailable = window.config?.openRouterEnabled || settings.value.openRouterKey;
+
+            if (model.requiresGroqKey && groqAvailable) {
+                available.push(model);
+            } else if (model.requiresOpenRouterKey && openRouterAvailable) {
+                available.push(model);
+            } else if (model.requiresGroqKey && !groqAvailable) {
+                requireGroq.push(model);
+            } else if (model.requiresOpenRouterKey && !openRouterAvailable) {
+                requireOpenRouter.push(model);
+            } else if (!model.requiresGroqKey && !model.requiresOpenRouterKey) {
+                // Models that don't require any keys (fallback case)
+                available.push(model);
+            }
+        });
+
+        return { available, requireGroq, requireOpenRouter };
+    });
+
     return (
         <div className={wrapperClassName}>
             {/* Backdrop */}
@@ -124,43 +162,70 @@ export function ModelSelectionModal({
 
                 {/* Content */}
                 <div className="px-6 pb-6 overflow-y-auto max-h-[60vh]">
-                    {/* Favorites Section */}
-                    <div className="mb-8">
-                        <div className="flex items-center gap-2 mb-4">
-                            <h3 className={`text-sm font-medium text-gray-700 dark:text-gray-300`}>
-                                Available Models
-                            </h3>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                            {models.filter(m => m.name.toLowerCase().includes(search.value.toLowerCase()) && (settings.value.openRouterKey || !m.requiresOpenRouterKey)).map((model) => (
-                                <ModelCard
-                                    key={model.id}
-                                    model={model}
-                                    isSelected={selectedModel.value === model}
-                                    onClick={() => onSelectModel(model)}
-                                />
-                            ))}
-                        </div>
-                    </div>
+                    {/* Available Models Section */}
+                    {filteredModels.value.available.length > 0 && (
+                        <ModelCategory
+                            name="Available Models"
+                            models={filteredModels.value.available}
+                            selectedModel={selectedModel}
+                            onSelectModel={onSelectModel}
+                        />
+                    )}
 
-                    {!settings.value.openRouterKey && <div>
-                        <h3 className={`text-sm font-medium mb-4 text-gray-700 dark:text-gray-300`}>
-                            Require OpenRouter Key in Settings
-                        </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-                            {models.filter(m => m.name.toLowerCase().includes(search.value.toLowerCase()) && m.requiresOpenRouterKey).map((model) => (
-                                <ModelCard
-                                    disabled={true}
-                                    key={model.id}
-                                    model={model}
-                                    isSelected={selectedModel.value === model}
-                                    onClick={() => onSelectModel(model)}
-                                />
-                            ))}
-                        </div>
-                    </div>}
+                    {/* Require Groq Key Section */}
+                    {filteredModels.value.requireGroq.length > 0 && (
+                        <ModelCategory
+                            name="Require Groq key in Settings"
+                            models={filteredModels.value.requireGroq}
+                            disabled={true}
+                            selectedModel={selectedModel}
+                            onSelectModel={onSelectModel}
+                        />
+                    )}
+
+                    {/* Require OpenRouter Key Section */}
+                    {filteredModels.value.requireOpenRouter.length > 0 && (
+                        <ModelCategory
+                            name="Require OpenRouter Key in Settings"
+                            models={filteredModels.value.requireOpenRouter}
+                            disabled={true}
+                            selectedModel={selectedModel}
+                            onSelectModel={onSelectModel}
+                        />
+                    )}
+
+                    {/* No Results */}
+                    {filteredModels.value.available.length === 0 &&
+                        filteredModels.value.requireGroq.length === 0 &&
+                        filteredModels.value.requireOpenRouter.length === 0 && (
+                            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                                <Search size={48} className="mx-auto mb-4 opacity-50" />
+                                <p>No models found matching "{search.value}"</p>
+                            </div>
+                        )}
                 </div>
             </div>
         </div >
     );
 };
+
+function ModelCategory(props: { name: string, disabled?: boolean, models: Model[], selectedModel: Signal<Model>, onSelectModel: (m: Model) => void }) {
+    return <div className="mb-8">
+        <div className="flex items-center gap-2 mb-4">
+            <h3 className={`text-sm font-medium text-gray-700 dark:text-gray-300`}>
+                {props.name}
+            </h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {props.models.map((model) => (
+                <ModelCard
+                    key={model.id}
+                    model={model}
+                    disabled={props.disabled}
+                    isSelected={props.selectedModel.value === model}
+                    onClick={() => props.onSelectModel(model)}
+                />
+            ))}
+        </div>
+    </div>
+}

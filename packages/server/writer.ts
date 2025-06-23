@@ -2,7 +2,9 @@ import { storeObject } from "@t3-chat-clone/db";
 import { Database } from "@t3-chat-clone/db/server";
 import { chat, writerUpdate } from "@t3-chat-clone/stores";
 import { APICallError, CoreMessage, LanguageModelV1, streamText } from "ai";
-import { BUFFER_MS, generateTitle, getModel } from "./chat";
+import { getModel } from "./models";
+import { generateTitle, BUFFER_MS } from "./chat";
+import { keyHandler } from "./instances";
 
 export async function handleWriterUpdate(db: Database, id: string, user: string, object: storeObject<typeof writerUpdate>) {
     if (!object.message) return;
@@ -10,7 +12,7 @@ export async function handleWriterUpdate(db: Database, id: string, user: string,
     let isByok: boolean;
     let model: LanguageModelV1;
     try {
-        const m = await getModel(db, user, object.model, false);
+        const m = await getModel(object.model, db, keyHandler, user, false);
         isByok = m.isByok
         model = m.model;
     } catch (err) {
@@ -108,7 +110,7 @@ async function titleChat(db: Database, user: string, chatId: string, msg: string
     const chats = await db.getAll(chat, user, 'chatId', chatId);
     const writerChat = chats[0];
     if (writerChat === undefined || (writerChat.object.title !== null && writerChat.object.title !== 'New Writer')) return;
-    const title = await generateTitle(msg);
+    const title = await generateTitle(msg, db, user);
     await db.push(chat, user, {
         ...writerChat.object,
         title

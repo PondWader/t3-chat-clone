@@ -33,6 +33,12 @@ You can find more informatioon about installing Bun on [the official docs page](
 
 #### Setup
 
+First install the project dependencies:
+
+```
+bun i
+```
+
 To run the setup command enter the directory of the project and run:
 
 ```

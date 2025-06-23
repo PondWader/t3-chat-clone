@@ -1,13 +1,12 @@
-import { groq } from "@ai-sdk/groq";
 import { storeObject } from "@t3-chat-clone/db";
 import { APICallError, generateText, ImagePart, LanguageModelV1 } from "ai";
-import { chat, chatMessage, settings } from "@t3-chat-clone/stores";
+import { chat, chatMessage } from "@t3-chat-clone/stores";
 import { Database } from "@t3-chat-clone/db/server";
 import { CoreMessage, streamText } from "ai";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { openRouterModels, supportedGroqModels } from "./models";
+import { getModel as getModelFromModels } from "./models";
+import { keyHandler } from "./instances";
 
-const titleModel = groq('llama-3.1-8b-instant');
+const TITLE_MODEL = process.env.TITLE_MODEL || 'llama-3.1-8b-instant';
 
 export const BUFFER_MS = 20;
 
@@ -15,7 +14,7 @@ export async function handleMessage(db: Database, id: string, user: string, obje
     let isByok: boolean;
     let model: LanguageModelV1;
     try {
-        const m = await getModel(db, user, object.model, object.search > 0);
+        const m = await getModelFromModels(object.model, db, keyHandler, user, object.search > 0);
         isByok = m.isByok
         model = m.model;
     } catch (err) {
@@ -112,22 +111,6 @@ export async function handleMessage(db: Database, id: string, user: string, obje
     })
 }
 
-export async function getModel(db: Database, user: string, modelId: string, search?: boolean) {
-    let model: LanguageModelV1;
-    let isByok = false;
-    if (supportedGroqModels.includes(modelId)) {
-        model = groq(modelId);
-    } else {
-        isByok = true;
-        const byok = await loadByokModel(db, user, modelId, search ?? false);
-        if (typeof byok.error === 'string') {
-            throw byok.error;
-        }
-        model = byok.instance;
-    };
-    return { model, isByok };
-}
-
 async function createNewChat(db: Database, user: string, chatId: string, firstMessage: string) {
     const createdAt = Date.now();
     const id = await db.push(chat, user, {
@@ -137,7 +120,7 @@ async function createNewChat(db: Database, user: string, chatId: string, firstMe
         writer: 0,
         createdAt
     })
-    const title = await generateTitle(firstMessage);
+    const title = await generateTitle(firstMessage, db, user);
     await db.push(chat, user, {
         chatId,
         title,
@@ -147,37 +130,28 @@ async function createNewChat(db: Database, user: string, chatId: string, firstMe
     }, undefined, id)
 }
 
-export async function generateTitle(message: string) {
+export async function generateTitle(message: string, db: Database, user: string) {
     // Prompt taken from https://github.com/vercel/ai-chatbot/blob/f18af236a0946c808650967bef7681182ddfd1f6/app/(chat)/actions.ts#L18 (Apache license: https://github.com/vercel/ai-chatbot/blob/f18af236a0946c808650967bef7681182ddfd1f6/LICENSE)
-    const { text } = await generateText({
-        model: titleModel,
-        system: `
-    - you will generate a short title based on the first message a user begins a conversation with
-    - ensure it is not more than 30 characters long
-    - the title should be a summary of the user's message
-    - do not use quotes or colons`,
-        prompt: message.slice(0, 256),
-    });
+    try {
+        const { model } = await getModelFromModels(TITLE_MODEL, db, keyHandler, user, false);
 
-    if (text.length > 35) return message.replaceAll('\n', ' ').slice(0, 20);
-    return text;
-}
+        const { text } = await generateText({
+            model,
+            system: `
+        - you will generate a short title based on the first message a user begins a conversation with
+        - ensure it is not more than 30 characters long
+        - the title should be a summary of the user's message
+        - do not use quotes or colons`,
+            prompt: message.slice(0, 256),
+        });
 
-type Model = { error: string } | { error: undefined, instance: LanguageModelV1 }
-
-async function loadByokModel(db: Database, user: string, model: string, search: boolean): Promise<Model> {
-    const userSettings = await db.getAll(settings, user)
-    if (userSettings.length < 1 || userSettings[0].object.openRouterKey === null) return { error: 'OpenRouter API key has not been configured.' };
-
-    let orModelId = openRouterModels[model];
-    if (orModelId === undefined) return { error: 'Invalid model selection.' }
-    if (search) orModelId += ':online';
-
-    const openRouter = createOpenRouter({
-        apiKey: userSettings[0].object.openRouterKey
-    })
-
-    return { error: undefined, instance: openRouter.chat(orModelId) };
+        if (text.length > 35) return message.replaceAll('\n', ' ').slice(0, 35);
+        return text;
+    } catch (error) {
+        // Fallback to simple title if model fails
+        console.warn('Title generation failed:', error);
+        return message.replaceAll('\n', ' ').slice(0, 20);
+    }
 }
 
 function objectToMessage(msg: storeObject<typeof chatMessage>, allowImage: boolean): CoreMessage {

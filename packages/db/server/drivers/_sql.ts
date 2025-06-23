@@ -67,9 +67,11 @@ export function createQueryCreator(opts: CreateQueryCreatorOptions): QueryCreato
 
             let sql = `SELECT * FROM ${quoteName(tableName)}`;
 
-            sql += ` WHERE `;
             const bindings: any[] = [];
-            sql += matchConditions(conditions, bindings, quoteName);
+            if (Object.keys(conditions).length > 0) {
+                sql += ` WHERE `;
+                sql += matchConditions(conditions, bindings, quoteName);
+            }
 
             if (sort !== undefined && Object.keys(sort).length !== 0) {
                 sql += 'ORDER BY ';

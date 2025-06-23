@@ -100,7 +100,7 @@ export function useAccount() {
 }
 
 export function useSettings() {
-    return useSingularStore(settings, { openRouterKey: null });
+    return useSingularStore(settings, { openRouterKey: null, groqKey: null });
 }
 
 function useSingularStore<T, U extends T | null>(store: Store<T>, defaultValue: U) {

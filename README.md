@@ -24,9 +24,19 @@ An open source AI chat app built for the t3.chat cloneathon. Built for a snappy,
 
 ## Documentation
 
-Read the documentation in the `docs` directory.
+Comprehensive documentation is available in the `docs` directory:
 
-- [Installing](./docs/Installing.md)
+### Getting Started
+
+- [Installing](./docs/Installing.md) - Installation and setup instructions
+- [Setup Guide](./docs/Setup.md) - Configuration walkthrough
+
+### Features & Usage
+
+- [AI Models & Providers](./docs/AI-Models.md) - Supported models and API configuration
+- [Data Syncing](./docs/Syncing.md) - User accounts and device sync
+- [Writer Mode](./docs/Writer.md) - Guide to writer mode
+- [Title Model](./docs/Title-Model.md) - Guide to writer mode
 
 ## Quick start
 
@@ -52,11 +62,12 @@ By default this will listen on port 3000 and use a SQLite database in your curre
 
 #### Environment Variables
 
-| Variable      | Description                                                       |
-| ------------- | ----------------------------------------------------------------- |
-| PORT          | The port for the web server to listen on.                         |
-| DB_URL        | The URL of the database e.g. `sqlite://database.sqlite`.          |
-| CDN_DIRECTORY | The directory to store user uploads in (default `./user_content`) |
+| Variable      | Description                                                                     |
+| ------------- | ------------------------------------------------------------------------------- |
+| PORT          | The port for the web server to listen on.                                       |
+| DB_URL        | The URL of the database e.g. `sqlite://database.sqlite`.                        |
+| CDN_DIRECTORY | The directory to store user uploads in (default `./user_content`)               |
+| TITLE_MODEL   | The AI model to use for generating chat titles (default `llama-3.1-8b-instant`) |
 
 #### Developing
 

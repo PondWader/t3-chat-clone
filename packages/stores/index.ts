@@ -19,7 +19,8 @@ export const settings = createStore({
     name: 'settings',
     type: 'singular',
     schema: z.object({
-        openRouterKey: z.string().nullable()
+        openRouterKey: z.string().nullable(),
+        groqKey: z.string().nullable()
     })
 })
 

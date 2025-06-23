@@ -20,10 +20,11 @@ export type Model = {
         reasoning?: boolean;
     };
     requiresOpenRouterKey?: boolean;
+    requiresGroqKey?: boolean;
 }
 
 export const models: Model[] = [
-    // Generally available models
+    // Groq models
     {
         id: 'llama-3.1-8b-instant',
         name: 'Llama',
@@ -31,14 +32,16 @@ export const models: Model[] = [
         icon: Llama,
         capabilities: {
             speed: true
-        }
+        },
+        requiresGroqKey: true
     },
     {
         id: 'llama-3.3-70b-versatile',
         name: 'Llama',
         version: '3.3 70B Versatile',
         icon: Llama,
-        capabilities: {}
+        capabilities: {},
+        requiresGroqKey: true
     },
     {
         id: 'qwen-qwq-32b',
@@ -48,7 +51,8 @@ export const models: Model[] = [
         capabilities: {
             reasoning: true,
             speed: true
-        }
+        },
+        requiresGroqKey: true
     },
     // OpenRouter models
     {
