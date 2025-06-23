@@ -40,7 +40,7 @@ export function connect(dbUrl: string): DatabaseDriverConn {
     const url = new URL(dbUrl);
     switch (url.protocol) {
         case "sqlite:":
-            return createSqliteConn(url.hostname);
+            return createSqliteConn(url.hostname + url.pathname);
     }
 
     throw new Error(`"${url.protocol}" is not a supported database protocol.`)

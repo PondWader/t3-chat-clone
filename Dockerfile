@@ -6,10 +6,6 @@ WORKDIR /usr/src/app
 COPY . .
 RUN bun install
 
-RUN mkdir -p "/data"
-
-VOLUME "/data"
-
 ENV PORT=3000
 ENV DB_URL="sqlite:///data/database.sqlite"
 ENV CDN_DIRECTORY="/data/user_content"

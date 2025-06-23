@@ -66,7 +66,7 @@ docker build --pull -t t3-chat-clone .
 To execute the setup script run:
 
 ```
-docker run --entrypoint bun -it t3-chat-clone run server:setup
+docker run --mount type=volume,src=ai-chat,dst=/data --entrypoint bun -it t3-chat-clone run server:setup
 ```
 
 You can read the [setup](Setup.md) guide to learn what to do at this step.
@@ -74,7 +74,7 @@ You can read the [setup](Setup.md) guide to learn what to do at this step.
 To start the server run:
 
 ```
-docker run -p 3000:3000 t3-chat-clone
+docker run --mount type=volume,src=ai-chat,dst=/data -p 3000:3000 t3-chat-clone
 ```
 
 You should now be able to visit http://localhost:3000 in your browser and use the website.
