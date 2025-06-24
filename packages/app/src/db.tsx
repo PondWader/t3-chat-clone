@@ -3,7 +3,7 @@ import { account, chat, chatMessage, settings, writerUpdate } from "@t3-chat-clo
 import { ComponentChild, createContext } from "preact";
 import { useContext, useEffect, useMemo } from "preact/hooks";
 import { useSignal, signal, useComputed, computed } from "@preact/signals";
-import type { ObjectInstance, Store } from "@t3-chat-clone/db";
+import type { ObjectInstance, Store, storeObject } from "@t3-chat-clone/db";
 
 const DBContext = createContext<Client | null>(null);
 
@@ -35,12 +35,15 @@ export function useChat(chatId: string | null) {
     }), [chatId]);
 }
 
+let chatsCache: Map<string, ObjectInstance<storeObject<typeof chat>>> | undefined = undefined;
+
 export function useChats() {
-    const chats = useStore(chat);
-    return useComputed(() => [...chats.value.values()]);
+    const chats = useStore(chat, undefined, undefined, chatsCache);
+    return useComputed(() => {
+        chatsCache = chats.value;
+        return [...chats.value.values()]
+    });
 }
-
-
 
 export function useWriterUpdates(chatId: string | null) {
     const writers = useStore(writerUpdate, 'chatId', chatId);
