@@ -145,7 +145,7 @@ export async function generateTitle(message: string, db: Database, user: string)
             prompt: message.slice(0, 256),
         });
 
-        if (text.length > 35) return message.replaceAll('\n', ' ').slice(0, 35);
+        if (text.length > 35) return text.replaceAll('\n', ' ').slice(0, 35);
         return text;
     } catch (error) {
         // Fallback to simple title if model fails
