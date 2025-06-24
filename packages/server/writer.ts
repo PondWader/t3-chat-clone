@@ -89,7 +89,7 @@ export async function handleWriterUpdate(db: Database, id: string, user: string,
                 content: msg,
                 model: object.model,
                 createdAt: date,
-                error: null,
+                error,
                 message: null
             })
             lastUpdate = Date.now();
@@ -101,7 +101,7 @@ export async function handleWriterUpdate(db: Database, id: string, user: string,
         content: msg,
         model: object.model,
         createdAt: date,
-        error: null,
+        error,
         message: null
     })
 }

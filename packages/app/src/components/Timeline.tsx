@@ -1,4 +1,4 @@
-import { Clock, Pencil } from 'lucide-preact';
+import { AlertCircle, Clock, Pencil } from 'lucide-preact';
 import { ComponentChild, FunctionalComponent } from 'preact';
 
 export type TimelineEvent = {
@@ -8,6 +8,7 @@ export type TimelineEvent = {
     date: Date;
     onClick: () => void;
     selected: boolean;
+    error?: string | null;
 };
 
 export default function Timeline(props: { events: TimelineEvent[] }) {
@@ -18,32 +19,45 @@ export default function Timeline(props: { events: TimelineEvent[] }) {
                 <div className="absolute left-6 mb-8 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-600"></div>
 
                 {props.events.map((event, index) => (
-                    <div key={event.key} className="relative flex items-start mb-8 group">
-                        {/* Timeline dot with icon */}
-                        <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-700 shadow-lg group-hover:scale-110`}>
-                            <event.icon width={30} height={30} />
-                        </div>
-
-                        {/* Content */}
-                        <div onClick={event.onClick} className={`cursor-pointer ml-6 flex-1 bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 border group-hover:shadow-lg
-                            ${event.selected ? 'border-purple-400 dark:border-purple-600' : 'border-gray-100 dark:border-gray-500 hover:border-gray-400'}`}>
-                            <p className="text-gray-600 dark:text-gray-200 mb-4 leading-relaxed">
-                                {event.content}
-                            </p>
-
-                            <div className="text-sm text-gray-500">
-                                <div className="flex items-center gap-1">
-                                    <Clock className="w-4 h-4" />
-                                    <span>{event.date.toLocaleString()}</span>
-                                </div>
-
+                    <div key={event.key} className="relative mb-8">
+                        <div className="relative flex items-start group">
+                            {/* Timeline dot with icon */}
+                            <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-700 shadow-lg group-hover:scale-110`}>
+                                <event.icon width={30} height={30} />
                             </div>
-                        </div>
 
-                        {/* Connecting line to next item */}
-                        {index < props.events.length - 1 && (
-                            <div className="absolute left-6 top-12 w-0.5 h-8 bg-gray-200 dark:bg-gray-600"></div>
-                        )}
+                            {/* Content */}
+                            <div onClick={event.onClick} className={`cursor-pointer ml-6 flex-1 bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 border group-hover:shadow-lg
+                                ${event.selected ? 'border-purple-400 dark:border-purple-600' : 'border-gray-100 dark:border-gray-500 hover:border-gray-400'}`}>
+                                <p className="text-gray-600 dark:text-gray-200 mb-4 leading-relaxed">
+                                    {event.content}
+                                </p>
+
+                                {/* Error Display Inside Message Box */}
+                                {event.error && (
+                                    <div className={`flex items-center gap-3 px-4 py-3 mb-4 rounded-lg
+                                        bg-red-50 border border-red-200 text-red-700 
+                                        dark:bg-red-900/20 dark:border dark:border-red-800/30 dark:text-red-400
+                                    `}>
+                                        <AlertCircle size={16} className="flex-shrink-0" />
+                                        <span className="text-sm">{event.error}</span>
+                                    </div>
+                                )}
+
+                                <div className="text-sm text-gray-500">
+                                    <div className="flex items-center gap-1">
+                                        <Clock className="w-4 h-4" />
+                                        <span>{event.date.toLocaleString()}</span>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            {/* Connecting line to next item */}
+                            {index < props.events.length - 1 && (
+                                <div className="absolute left-6 top-12 w-0.5 h-8 bg-gray-200 dark:bg-gray-600"></div>
+                            )}
+                        </div>
                     </div>
                 ))}
 

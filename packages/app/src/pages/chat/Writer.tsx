@@ -1,8 +1,8 @@
 import { useRoute } from "preact-iso";
 import Sidebar from "./Sidebar";
 import { useDB, useWriterUpdates } from "../../db";
-import { effect, signal, Signal, useSignal, useSignalEffect } from "@preact/signals";
-import { Check, Send } from "lucide-preact";
+import { computed, effect, signal, Signal, useSignal, useSignalEffect } from "@preact/signals";
+import { AlertCircle, Check, Send } from "lucide-preact";
 import { models } from "../../models";
 import { ModelSelectionModal } from "./ModelSelectionModal";
 import { useEffect, useMemo, useRef } from "preact/hooks";
@@ -12,7 +12,7 @@ import Timeline from "../../components/Timeline";
 import { ObjectInstance, storeObject } from "@t3-chat-clone/db";
 import { Client } from "@t3-chat-clone/db/client";
 import ViewSwitch from "../../components/ViewSwitch";
-import Llama from "../../icons/Llama";
+import { SyncTimeoutError } from "../../../../db/client/Connection";
 
 const SAVE_BUFFER_MS = 600;
 
@@ -85,6 +85,16 @@ function WriterInterface(props: { chatId: string }) {
         return () => sub.unsubscribe();
     }, [props.chatId])
 
+    const error = useMemo(() => {
+        return computed(() => {
+            if (updates.value.length === 0) return null;
+            const lastUpdate = updates.value[0].object;
+            if (lastUpdate.role === "user" || !lastUpdate.error) return null;
+            if (Date.now() - lastUpdate.createdAt > 20_000) return null;
+            return lastUpdate.error;
+        });
+    }, [props.chatId]);
+
     return <div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-800`}>
         <div class="flex-1 flex-row flex items-center justify-center p-1 lg:p-2">
             <div className="w-[90vw] lg:max-[1360px]:w-[min(90rem,75vw)] min-[1360px]:w-[min(90rem,60vw)] mx-auto px-1 sm:px-6 lg:px-4 py-6">
@@ -125,7 +135,7 @@ function WriterInterface(props: { chatId: string }) {
         </div>
 
 
-        <Input chatId={props.chatId} isLoading={isLoading} text={text} />
+        <Input chatId={props.chatId} isLoading={isLoading} text={text} error={error} />
     </div>
 }
 
@@ -148,6 +158,7 @@ function UpdateTimeline(props: {
             icon: models.find(m => m.id === u.object.model)!.icon,
             date: new Date(u.object.createdAt),
             selected: selectedUpdate.value === u.id,
+            error: u.object.error,
             onClick: () => {
                 if (selectedUpdate.value === u.id) {
                     selectedUpdate.value = undefined;
@@ -174,7 +185,7 @@ function UpdateTimeline(props: {
     ))} />
 }
 
-function Input(props: { chatId: string, isLoading: Signal<boolean>, text: Signal<string> }) {
+function Input(props: { chatId: string, isLoading: Signal<boolean>, text: Signal<string>, error: Signal<string | null> }) {
     const message = useSignal('');
     const isModelModalOpen = useSignal(false);
     const selectedModel = useSignal(models.find(m => m.id === localStorage.getItem('selected_model_id')) ?? models.find(m => m.id === 'llama-3.1-8b-instant')!);
@@ -186,8 +197,7 @@ function Input(props: { chatId: string, isLoading: Signal<boolean>, text: Signal
     })
 
     const sendMessage = () => {
-        // TODO: Handle errors
-        db.push(writerUpdate, {
+        const pushResult = db.push(writerUpdate, {
             chatId: props.chatId,
             role: 'user',
             content: props.text.value,
@@ -195,6 +205,19 @@ function Input(props: { chatId: string, isLoading: Signal<boolean>, text: Signal
             model: selectedModel.value.id,
             message: message.value,
             createdAt: Date.now()
+        })
+        pushResult.catch(err => {
+            props.isLoading.value = false;
+            if (err === SyncTimeoutError) {
+                db.editMemory(writerUpdate, pushResult.id, {
+                    error: 'Sync timed out.'
+                })
+            } else {
+                console.error(err);
+                db.editMemory(writerUpdate, pushResult.id, {
+                    error: 'An unexpected error occured.'
+                })
+            }
         })
         message.value = '';
         props.isLoading.value = true;
@@ -234,6 +257,14 @@ function Input(props: { chatId: string, isLoading: Signal<boolean>, text: Signal
 
     return <div className={`border-t p-6 border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900`}>
         <div className="max-w-4xl mx-auto">
+            {props.error.value && <div className={`flex items-center gap-3 px-4 py-3 mb-4 rounded-lg
+                        bg-red-50 border border-red-200 text-red-700 
+                        dark:bg-red-900/20 dark:border dark:border-red-800/30 dark:text-red-400
+                    `}>
+                <AlertCircle size={16} className="flex-shrink-0" />
+                <span className="text-sm">{props.error.value}</span>
+            </div>}
+
             <div className="relative">
                 <textarea
                     ref={textareaRef}
