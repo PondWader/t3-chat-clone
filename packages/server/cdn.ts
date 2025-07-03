@@ -10,7 +10,7 @@ export function createCdn() {
     return {
         async load(req: Bun.BunRequest<`${string}/:name`>) {
             const name = req.params.name;
-            if (!name.match(/([a-zA-Z]|.)+/)) {
+            if (!name.match(/^[a-zA-Z0-9]+\.[a-zA-Z0-9]+$/)) {
                 return new Response(null, { status: 400 });
             }
             const f = Bun.file(`${CDN_DIRECTORY}/${req.params.name}`);
@@ -27,7 +27,7 @@ export function createCdn() {
                 return new Response(null, { status: 400 });
             }
 
-            const fileId = Bun.randomUUIDv7();
+            const fileId = Bun.randomUUIDv7().replaceAll('-', '');
             await Bun.write(`${CDN_DIRECTORY}/${fileId}.${ext}`, f);
             return Response.json({
                 location: `${fileId}.${ext}`
